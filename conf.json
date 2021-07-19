@@ -1,0 +1,29 @@
+{
+    "dataSource": {
+      "driverName": "mysql",
+      "addr": "localhost:3308",
+      "database": "synchrobits",
+      "user": "root",
+      "password": "my-secret-pw",
+      "enableAutoMigrate": false
+    },
+    "redis": {
+      "addr": ":6379",
+      "password": ""
+    },
+    "kafka": {
+      "brokers": [
+        "localhost:9092"
+      ]
+    },
+    "pushServer": {
+      "addr": ":8002",
+      "path": "/ws"
+    },
+    "restServer": {
+      "addr": ":8011"
+    },
+    "jwtSecret": "flj23jfoi23apdl3jfslkj23za01mf3",
+    "apiKey": "S0xlYLWCGLHKbuZuSXiWsu0DIc5ZJiYJ"
+  }
+  
