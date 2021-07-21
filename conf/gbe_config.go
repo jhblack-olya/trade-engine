@@ -3,6 +3,7 @@ package conf
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"sync"
 )
 
@@ -48,11 +49,11 @@ var configOnce sync.Once
 
 func GetConfig() *GbeConfig {
 	configOnce.Do(func() {
-		bytes, err := ioutil.ReadFile("C:/Users/Sweety/projects/accubits/trade-engine/conf.json")
+		gopath := os.Getenv("GOPATH")
+		bytes, err := ioutil.ReadFile(gopath + "/trade-engine/conf.json")
 		if err != nil {
 			panic(err)
 		}
-
 		err = json.Unmarshal(bytes, &config)
 		if err != nil {
 			panic(err)
