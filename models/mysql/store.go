@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/prometheus/common/log"
 	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/models"
@@ -20,7 +21,6 @@ type Store struct {
 }
 
 func SharedStore() models.Store {
-	fmt.Println("entering here")
 	storeOnce.Do(func() {
 		err := initDb()
 		if err != nil {
@@ -43,6 +43,7 @@ func initDb() error {
 	url := fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8&parseTime=True&loc=Local",
 		cfg.DataSource.User, cfg.DataSource.Password, cfg.DataSource.Addr, cfg.DataSource.Database)
 	var err error
+	fmt.Println("cfg.DataSource.DriverName", cfg.DataSource.DriverName)
 	gdb, err = gorm.Open(cfg.DataSource.DriverName, url)
 	if err != nil {
 		return err
@@ -58,7 +59,15 @@ func initDb() error {
 
 	if cfg.DataSource.EnableAutoMigrate {
 		var tables = []interface{}{
+			&models.Account{},
+			&models.Order{},
 			&models.Product{},
+			&models.Trade{},
+			&models.Fill{},
+			&models.User{},
+			&models.Bill{},
+			&models.Tick{},
+			&models.Config{},
 		}
 		for _, table := range tables {
 			log.Infof("migrating database, table: %v", reflect.TypeOf(table))

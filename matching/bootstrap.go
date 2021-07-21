@@ -2,11 +2,12 @@ package matching
 
 import (
 	"github.com/siddontang/go-log/log"
+	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/service"
 )
 
 func StartEngine() {
-	// gbeConfig := conf.GetConfig()
+	gbeConfig := conf.GetConfig()
 
 	products, err := service.GetProducts()
 	if err != nil {
@@ -14,7 +15,8 @@ func StartEngine() {
 	}
 
 	for _, product := range products {
-		log.Info("product", product)
+		orderReader := NewKafkaOrderReader(product.Id, gbeConfig.Kafka.Brokers)
+		log.Info("orderReader", orderReader)
 	}
 
 	log.Info("match engine ok")
