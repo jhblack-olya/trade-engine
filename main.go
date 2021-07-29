@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/prometheus/common/log"
 	"gitlab.com/gae4/trade-engine/matching"
-	"gitlab.com/gae4/trade-engine/rest"
 
 	"net/http"
 	_ "net/http/pprof"
@@ -16,7 +15,6 @@ func main() {
 	}()
 
 	matching.StartEngine()
-	rest.StartServer()
 
 	select {}
 }
