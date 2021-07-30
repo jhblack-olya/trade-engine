@@ -33,3 +33,8 @@ func (s *Store) UpdateAccount(account *models.Account) error {
 	account.UpdatedAt = time.Now()
 	return s.db.Save(account).Error
 }
+
+func (s *Store) AddAccount(account *models.Account) error {
+	account.CreatedAt = time.Now()
+	return s.db.Create(account).Error
+}
