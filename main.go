@@ -5,6 +5,8 @@ import (
 	"gitlab.com/gae4/trade-engine/matching"
 
 	"net/http"
+
+	"gitlab.com/gae4/trade-engine/rest"
 )
 
 func main() {
@@ -15,5 +17,6 @@ func main() {
 
 	matching.StartEngine()
 
+	rest.StartServer()
 	select {}
 }
