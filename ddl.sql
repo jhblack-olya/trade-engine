@@ -79,6 +79,7 @@ CREATE TABLE `g_order` (
   `status` varchar(255) NOT NULL,
   `settled` tinyint(1) NOT NULL DEFAULT '0',
   `client_oid` varchar(36) NOT NULL DEFAULT '',
+  `expires_in` bigint(20) DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `idx_uspsi` (`user_id`,`product_id`,`status`,`side`,`id`),
   KEY `idx_uid_coid` (`user_id`,`client_oid`)
@@ -152,3 +153,5 @@ insert into `g_product`(`id`,`created_at`,`updated_at`,`base_currency`,`quote_cu
 ('EOS-USDT',null,null,'EOS','USDT',0.0001000000000000,1000.0000000000000000,4,3,0,0E-16,0E-16),
 ('ETH-USDT',null,null,'ETH','USDT',0.0001000000000000,10000.0000000000000000,4,2,0.01,0E-16,0E-16),
 ('LTC-USDT',null,null,'LTC','USDT',0.0010000000000000,1000.0000000000000000,4,2,0.01,0E-16,0E-16);
+
+ALTER TABLE `g_order` ADD `expires_in` bigint(20) DEFAULT 0;
