@@ -51,6 +51,7 @@ func (e *Engine) runFetcher() {
 
 	for {
 		offset, order, err := e.orderReader.FetchOrder()
+		fmt.Println("run fetcher order reader offset ", offset)
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -81,7 +82,8 @@ func (e *Engine) runApplier() {
 }
 
 func (e *Engine) runCommitter() {
-	var seq = e.OrderBook.logSeq
+	var seq = int64(0) // e.OrderBook.logSeq
+	fmt.Println("log seq of order book ", seq)
 	var logs []interface{}
 	for {
 		select {
