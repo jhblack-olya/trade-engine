@@ -16,7 +16,8 @@ func StartEngine() {
 
 	for _, product := range products {
 		orderReader := NewKafkaOrderReader(product.Id, gbeConfig.Kafka.Brokers)
-		matchEngine := NewEngine(product, orderReader)
+		logStore := NewKafkaLogStore(product.Id, gbeConfig.Kafka.Brokers)
+		matchEngine := NewEngine(product, orderReader, logStore)
 		log.Info("orderReader", orderReader)
 		log.Info("matchingEngine", matchEngine)
 	}

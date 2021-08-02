@@ -1,6 +1,8 @@
 package matching
 
 import (
+	"errors"
+	"fmt"
 	"math"
 
 	"github.com/emirpasic/gods/maps/treemap"
@@ -55,6 +57,11 @@ func (o *orderBook) nextLogSeq() int64 {
 	o.logSeq++
 	return o.logSeq
 }
+
+func (o *orderBook) nextTradeSeq() int64 {
+	o.logSeq++
+	return o.logSeq
+}
 func newBookOrder(order *models.Order) *BookOrder {
 	return &BookOrder{
 		OrderId:   order.Id,
@@ -70,6 +77,23 @@ func newBookOrder(order *models.Order) *BookOrder {
 func (d *depth) add(order BookOrder) {
 	d.orders[order.OrderId] = &order
 	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
+}
+
+func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
+	order, found := d.orders[orderId]
+	if !found {
+		return errors.New(fmt.Sprintf("order %v not found on book", orderId))
+	}
+
+	if order.Size.LessThan(size) {
+		return errors.New(fmt.Sprintf("order %v size %v less than %v", orderId, order.Size, size))
+	}
+	order.Size = order.Size.Sub(size)
+	if order.Size.IsZero() {
+		delete(d.orders, orderId)
+		d.queue.Remove(&priceOrderIdKey{order.Price, order.OrderId})
+	}
+	return nil
 }
 
 func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
@@ -106,6 +130,67 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			(takerOrder.Side == models.SideSell && takerOrder.Price.GreaterThan(makerOrder.Price)) {
 			break
 		}
+
+		//trade price
+		var price = makerOrder.Price
+		//trade size
+		var size decimal.Decimal
+
+		if takerOrder.Type == models.OrderTypeLimit ||
+			(takerOrder.Type == models.OrderTypeMarket && takerOrder.Side == models.SideSell) {
+			if takerOrder.Size.IsZero() {
+				break
+			}
+
+			//take the minimum size of taker and maker as trade size
+			size = decimal.Min(takerOrder.Size, makerOrder.Size)
+			//adjust the size of taker order so that if there is no most available deal to complete taker order size then
+			//remaining can be completed for next itteration
+			takerOrder.Size = takerOrder.Size.Sub(size)
+
+		} else if takerOrder.Type == models.OrderTypeMarket && takerOrder.Side == models.SideBuy {
+			if takerOrder.Funds.IsZero() {
+				break
+			}
+			//Understand it by example
+			//Let marketprice = 5 and size=5 therefor fund of taker = 5x5=25
+			// let most available price i.e maker price = 6 and size = 3
+			// trade happens on the basis of makers price. If it is equal with market price it will execute on marketprice
+			//So we divide funds on basis of maker price to know what size of trade will get executed at current maker price
+			//takerSize=25/6 = 4 for ease of understanding
+			takerSize := takerOrder.Funds.Div(price).Truncate(o.product.BaseScale)
+			if takerSize.IsZero() {
+				break
+			}
+			//taking minimum of takerSize and makerSize so trade gets completely filled
+			//size=3
+			size = decimal.Min(takerSize, makerOrder.Size)
+			//fund=3*6=18
+			funds := size.Mul(price)
+			//adjusting remaining fund for traker 25-18 = 7
+			takerOrder.Funds = takerOrder.Funds.Sub(funds)
+			//Here trade executed for 3 bid remaining 2 bid will be filled for next available maker
+			// Now market price or latest trade price is 6
+		} else {
+			log.Fatal("unknown orderType and side combination")
+		}
+		//adjust size of maker order or delete maker order if size is zero
+		// according to above example for this itteration fetched maker order has been settled and will be
+		//deleted from order book
+		err := makerDepth.decrSize(makerOrder.OrderId, size)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// matched,write a log
+		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size)
+		logs = append(logs, matchLog)
+
+		// maker is filled
+		if makerOrder.Size.IsZero() {
+			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled)
+			logs = append(logs, doneLog)
+		}
 	}
 
 	//If pogram controller break out of loop
@@ -117,6 +202,20 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		o.depths[takerOrder.Side].add(*takerOrder)
 		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder)
 		logs = append(logs, openLog)
+	} else {
+		//if marketorder and order dint execute cancel order
+		var remainingSize = takerOrder.Size
+		var reason = models.DoneReasonFilled
+		if takerOrder.Type == models.OrderTypeMarket {
+			takerOrder.Price = decimal.Zero
+			remainingSize = decimal.Zero
+			if (takerOrder.Side == models.SideSell && takerOrder.Size.GreaterThan(decimal.Zero)) ||
+				(takerOrder.Side == models.SideBuy && takerOrder.Funds.GreaterThan(decimal.Zero)) {
+				reason = models.DoneReasonCancelled
+			}
+		}
+		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason)
+		logs = append(logs, doneLog)
 	}
 	return logs
 }

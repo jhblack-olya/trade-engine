@@ -14,6 +14,7 @@ type Engine struct {
 	orderCh     chan *offsetOrder
 	logCh       chan Log
 	OrderBook   *orderBook
+	logStore    LogStore
 }
 
 type offsetOrder struct {
@@ -21,7 +22,7 @@ type offsetOrder struct {
 	Order  *models.Order
 }
 
-func NewEngine(product *models.Product, orderReader OrderReader) *Engine {
+func NewEngine(product *models.Product, orderReader OrderReader, logStore LogStore) *Engine {
 	e := &Engine{
 		productId:   product.Id,
 		orderReader: orderReader,
@@ -32,6 +33,8 @@ func NewEngine(product *models.Product, orderReader OrderReader) *Engine {
 
 func (e *Engine) Start() {
 	go e.runFetcher()
+	go e.runApplier()
+	go e.runCommitter()
 }
 
 //runFetcher: go routine responsible for continuously pulling order from kafka topic pushed from orderapi
@@ -73,6 +76,33 @@ func (e *Engine) runApplier() {
 			}
 			orderOffset = offsetOrder.Offset
 			fmt.Println("orderOffset ", orderOffset)
+		}
+	}
+}
+
+func (e *Engine) runCommitter() {
+	var seq = e.OrderBook.logSeq
+	var logs []interface{}
+	for {
+		select {
+		case log := <-e.logCh:
+			if log.GetSeq() <= seq {
+				logger.Info("discard log seq=%v", seq)
+				continue
+			}
+			seq = log.GetSeq()
+			logs = append(logs, log)
+
+			if len(e.logCh) > 0 && len(logs) < 100 {
+				continue
+			}
+
+			err := e.logStore.Store(logs)
+			if err != nil {
+				panic(err)
+			}
+			logs = nil
+
 		}
 	}
 }
