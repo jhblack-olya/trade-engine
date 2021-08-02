@@ -10,7 +10,7 @@ import (
 )
 
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
-	size, price, funds decimal.Decimal) (*models.Order, error) {
+	size, price, funds decimal.Decimal, expiresIn int64) (*models.Order, error) {
 	product, err := GetProductById(productId)
 	if err != nil {
 		return nil, err
@@ -68,6 +68,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		Price:     price,
 		Status:    models.OrderStatusNew,
 		Type:      orderType,
+		ExpiresIn: expiresIn,
 	}
 
 	db, err := mysql.SharedStore().BeginTx()

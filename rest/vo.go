@@ -20,4 +20,5 @@ type placeOrderRequest struct {
 	Side        string  `json:"side"`
 	Type        string  `json:"type"`        // [optional] limit or market (default is limit)
 	TimeInForce string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
+	ExpiresIn   int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
 }
