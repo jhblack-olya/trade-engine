@@ -160,6 +160,7 @@ type Order struct {
 	TimeInForce   string
 	Status        OrderStatus
 	Settled       bool
+	ExpiresIn     int64
 }
 
 type Fill struct {
