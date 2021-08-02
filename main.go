@@ -6,6 +6,8 @@ import (
 
 	"net/http"
 	_ "net/http/pprof"
+
+	"gitlab.com/gae4/trade-engine/rest"
 )
 
 func main() {
@@ -16,5 +18,6 @@ func main() {
 
 	matching.StartEngine()
 
+	rest.StartServer()
 	select {}
 }

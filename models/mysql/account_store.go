@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -10,9 +9,9 @@ import (
 
 func (s *Store) GetAccount(userId int64, currency string) (*models.Account, error) {
 	var account models.Account
-	fmt.Println("User ID ", userId, "\n currency ", currency)
-	err := s.db.Raw("SELECT * FROM g_account WHERE user_id=? AND currency=?", userId,
-		currency).Scan(&account).Error
+	err := s.db.Raw("SELECT * FROM g_account WHERE user_id=? AND currency=?",
+		userId, currency).Scan(&account).Error
+
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -21,19 +20,21 @@ func (s *Store) GetAccount(userId int64, currency string) (*models.Account, erro
 
 func (s *Store) GetAccountForUpdate(userId int64, currency string) (*models.Account, error) {
 	var account models.Account
-	err := s.db.Raw("SELECT * FROM g_account WHERE user_id=? AND currency=? FOR UPDATE", userId, currency).Scan(&account).Error
+	err := s.db.Raw("SELECT * FROM g_account WHERE user_id=? AND currency=? FOR UPDATE",
+		userId, currency).Scan(&account).Error
+
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
 	return &account, err
 }
 
-func (s *Store) AddAccount(account *models.Account) error {
-	account.CreatedAt = time.Now()
-	return s.db.Create(account).Error
-}
-
 func (s *Store) UpdateAccount(account *models.Account) error {
 	account.UpdatedAt = time.Now()
 	return s.db.Save(account).Error
+}
+
+func (s *Store) AddAccount(account *models.Account) error {
+	account.CreatedAt = time.Now()
+	return s.db.Create(account).Error
 }
