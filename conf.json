@@ -2,7 +2,7 @@
     "dataSource": {
       "driverName": "mysql",
       "addr": "localhost:3306",
-      "database": "tradeengineDev",
+      "database": "tradeengine",
       "user": "root",
       "password": "root",
       "enableAutoMigrate": false
