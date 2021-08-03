@@ -11,6 +11,7 @@ require (
 	github.com/jinzhu/gorm v1.9.10
 	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/mattn/go-isatty v0.0.8 // indirect
+	github.com/pingcap/log v0.0.0-20210317133921-96f4fcab92a4
 	github.com/prometheus/common v0.2.0
 	github.com/segmentio/kafka-go v0.3.2
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
