@@ -68,7 +68,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		Price:     price,
 		Status:    models.OrderStatusNew,
 		Type:      orderType,
-		ExpiresIn: expiresIn,
+		//	ExpiresIn: expiresIn,
 	}
 
 	db, err := mysql.SharedStore().BeginTx()

@@ -30,3 +30,6 @@ data/*
 .idea/*
 docker\
 conf.json
+*.mod
+*.sum
+.vscode/
