@@ -1,7 +1,6 @@
 package matching
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -55,7 +54,7 @@ func (b Bitmap) Set(i int64, v bool) {
 }
 func (w Window) put(val int64) error {
 	if val <= w.Min {
-		return errors.New(fmt.Sprintf("expired val %v, current Window [%v-%v]", val, w.Min, w.Max))
+		return fmt.Errorf("expired val %v, current Window [%v-%v]", val, w.Min, w.Max)
 	} else if val > w.Max {
 		delta := val - w.Max
 		w.Min += delta

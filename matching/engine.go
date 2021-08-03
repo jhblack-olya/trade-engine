@@ -45,6 +45,15 @@ func NewEngine(product *models.Product, orderReader OrderReader, logStore LogSto
 		snapshotApproveReqCh: make(chan *Snapshot, 32),
 		snapshotCh:           make(chan *Snapshot, 32),
 	}
+
+	snapshot, err := snapshotStore.GetLatest()
+	if err != nil {
+		logger.Fatalf("get latest snapshot error: %v", err)
+	}
+	if snapshot != nil {
+		e.restore(snapshot)
+	}
+
 	return e
 }
 
