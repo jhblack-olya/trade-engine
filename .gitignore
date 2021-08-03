@@ -32,3 +32,4 @@ docker\
 conf.json
 *.mod
 *.sum
+.vscode/

@@ -2,19 +2,29 @@ package matching
 
 import (
 	"fmt"
+	"time"
 
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/models"
 )
 
 type Engine struct {
-	productId   string
-	orderReader OrderReader
-	orderOffset int64
-	orderCh     chan *offsetOrder
-	logCh       chan Log
-	OrderBook   *orderBook
-	logStore    LogStore
+	productId            string
+	orderReader          OrderReader
+	orderOffset          int64
+	orderCh              chan *offsetOrder
+	logCh                chan Log
+	OrderBook            *orderBook
+	logStore             LogStore
+	snapshotStore        SnapshotStore
+	snapshotReqCh        chan *Snapshot
+	snapshotApproveReqCh chan *Snapshot
+	snapshotCh           chan *Snapshot
+}
+
+type Snapshot struct {
+	OrderBookSnapshot orderBookSnapshot
+	OrderOffset       int64
 }
 
 type offsetOrder struct {
@@ -22,11 +32,18 @@ type offsetOrder struct {
 	Order  *models.Order
 }
 
-func NewEngine(product *models.Product, orderReader OrderReader, logStore LogStore) *Engine {
+func NewEngine(product *models.Product, orderReader OrderReader, logStore LogStore, snapshotStore SnapshotStore) *Engine {
 	e := &Engine{
-		productId:   product.Id,
-		orderReader: orderReader,
-		orderCh:     make(chan *offsetOrder, 10000),
+		productId:            product.Id,
+		OrderBook:            NewOrderBook(product),
+		orderReader:          orderReader,
+		orderCh:              make(chan *offsetOrder, 10000),
+		logCh:                make(chan Log, 10000),
+		snapshotStore:        snapshotStore,
+		logStore:             logStore,
+		snapshotReqCh:        make(chan *Snapshot, 32),
+		snapshotApproveReqCh: make(chan *Snapshot, 32),
+		snapshotCh:           make(chan *Snapshot, 32),
 	}
 	return e
 }
@@ -35,6 +52,7 @@ func (e *Engine) Start() {
 	go e.runFetcher()
 	go e.runApplier()
 	go e.runCommitter()
+	go e.runSnapshots()
 }
 
 //runFetcher: go routine responsible for continuously pulling order from kafka topic pushed from orderapi
@@ -77,13 +95,23 @@ func (e *Engine) runApplier() {
 			}
 			orderOffset = offsetOrder.Offset
 			fmt.Println("orderOffset ", orderOffset)
+		case snapshot := <-e.snapshotReqCh:
+			delta := orderOffset - snapshot.OrderOffset
+			if delta <= 1000 {
+				continue
+			}
+			logger.Infof("should take snapshot: %v %v-[%v]-%v->",
+				e.productId, snapshot.OrderOffset, delta, orderOffset)
+			snapshot.OrderBookSnapshot = e.OrderBook.Snapshot()
+			snapshot.OrderOffset = orderOffset
+			e.snapshotApproveReqCh <- snapshot
 		}
 	}
 }
 
 func (e *Engine) runCommitter() {
-	var seq = int64(0) // e.OrderBook.logSeq
-	fmt.Println("log seq of order book ", seq)
+	var seq = e.OrderBook.logSeq
+	var pending *Snapshot = nil
 	var logs []interface{}
 	for {
 		select {
@@ -105,6 +133,56 @@ func (e *Engine) runCommitter() {
 			}
 			logs = nil
 
+			if pending != nil && seq >= pending.OrderBookSnapshot.LogSeq {
+				e.snapshotCh <- pending
+				pending = nil
+			}
+
+		case snapshot := <-e.snapshotApproveReqCh:
+			if seq >= snapshot.OrderBookSnapshot.LogSeq {
+				e.snapshotCh <- snapshot
+				pending = nil
+				continue
+			}
+
+			if pending != nil {
+				logger.Info("discard snapshot request (seq=%v), new one (seq=%v) received", pending.OrderBookSnapshot.LogSeq, snapshot.OrderBookSnapshot.LogSeq)
+			}
+			pending = snapshot
 		}
 	}
+}
+
+func (e *Engine) runSnapshots() {
+	// Order orderOffset at the last snapshot
+	orderOffset := e.orderOffset
+
+	for {
+		select {
+		case <-time.After(30 * time.Second):
+			// make a new snapshot request
+			e.snapshotReqCh <- &Snapshot{
+				OrderOffset: orderOffset,
+			}
+
+		case snapshot := <-e.snapshotCh:
+			// store snapshot
+			err := e.snapshotStore.Store(snapshot)
+			if err != nil {
+				logger.Warnf("store snapshot failed: %v", err)
+				continue
+			}
+			logger.Infof("new snapshot stored :product=%v OrderOffset=%v LogSeq=%v",
+				e.productId, snapshot.OrderOffset, snapshot.OrderBookSnapshot.LogSeq)
+
+			// update offset for next snapshot request
+			orderOffset = snapshot.OrderOffset
+		}
+	}
+}
+
+func (e *Engine) restore(snapshot *Snapshot) {
+	logger.Infof("restoring: %+v", *snapshot)
+	e.orderOffset = snapshot.OrderOffset
+	e.OrderBook.Restore(&snapshot.OrderBookSnapshot)
 }

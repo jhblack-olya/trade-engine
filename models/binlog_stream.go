@@ -2,7 +2,8 @@ package models
 
 import (
 	"github.com/go-redis/redis"
-	"github.com/siddontang/go-mysql/canal"
+	//"github.com/siddontang/go-mysql/canal"
+	"github.com/go-mysql-org/go-mysql/canal"
 	"gitlab.com/gae4/trade-engine/conf"
 )
 

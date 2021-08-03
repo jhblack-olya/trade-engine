@@ -19,6 +19,27 @@ type Window struct {
 
 type Bitmap []byte
 
+func newWindow(min, max int64) Window {
+	return Window{
+		Min:    min,
+		Max:    max,
+		Cap:    max - min,
+		Bitmap: New(max - min),
+	}
+}
+
+func New(l int64) Bitmap {
+	return NewSlice(l)
+}
+
+func NewSlice(l int64) []byte {
+	remainder := l % 8
+	if remainder != 0 {
+		remainder = 1
+	}
+	return make([]byte, l/8+remainder)
+}
+
 func Set(m []byte, i int64, v bool) {
 	index := i / 8
 	bit := i % 8

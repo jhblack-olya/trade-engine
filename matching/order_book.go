@@ -11,6 +11,10 @@ import (
 	"gitlab.com/gae4/trade-engine/models"
 )
 
+const (
+	orderIdWindowCap = 10000
+)
+
 type orderBook struct {
 	// one product corresponds to one order book
 	product *models.Product
@@ -218,4 +222,96 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		logs = append(logs, doneLog)
 	}
 	return logs
+}
+
+func (o *orderBook) Snapshot() orderBookSnapshot {
+	snapshot := orderBookSnapshot{
+		Orders:        make([]BookOrder, len(o.depths[models.SideSell].orders)+len(o.depths[models.SideBuy].orders)),
+		LogSeq:        o.logSeq,
+		TradeSeq:      o.tradeSeq,
+		OrderIdWindow: o.orderIdWindow,
+	}
+
+	i := 0
+	for _, order := range o.depths[models.SideSell].orders {
+		snapshot.Orders[i] = *order
+		i++
+	}
+
+	for _, order := range o.depths[models.SideBuy].orders {
+		snapshot.Orders[i] = *order
+		i++
+	}
+
+	return snapshot
+}
+
+func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
+	o.logSeq = snapshot.LogSeq
+	o.tradeSeq = snapshot.TradeSeq
+	o.orderIdWindow = snapshot.OrderIdWindow
+	if o.orderIdWindow.Cap == 0 {
+		o.orderIdWindow = newWindow(0, orderIdWindowCap)
+	}
+
+	for _, order := range snapshot.Orders {
+		o.depths[order.Side].add(order)
+	}
+}
+
+func priceOrderIdKeyAscComparator(a, b interface{}) int {
+	aAsserted := a.(*priceOrderIdKey)
+	bAsserted := b.(*priceOrderIdKey)
+
+	x := aAsserted.price.Cmp(bAsserted.price)
+	if x != 0 {
+		return x
+	}
+
+	y := aAsserted.orderId - bAsserted.orderId
+	if y == 0 {
+		return 0
+	} else if y > 0 {
+		return 1
+	} else {
+		return -1
+	}
+}
+
+func priceOrderIdKeyDescComparator(a, b interface{}) int {
+	aAsserted := a.(*priceOrderIdKey)
+	bAsserted := b.(*priceOrderIdKey)
+
+	x := aAsserted.price.Cmp(bAsserted.price)
+	if x != 0 {
+		return -x
+	}
+
+	y := aAsserted.orderId - bAsserted.orderId
+	if y == 0 {
+		return 0
+	} else if y > 0 {
+		return 1
+	} else {
+		return -1
+	}
+}
+
+func NewOrderBook(product *models.Product) *orderBook {
+	asks := &depth{
+		queue:  treemap.NewWith(priceOrderIdKeyAscComparator),
+		orders: map[int64]*BookOrder{},
+	}
+
+	bids := &depth{
+		queue:  treemap.NewWith(priceOrderIdKeyDescComparator),
+		orders: map[int64]*BookOrder{},
+	}
+
+	orderBook := &orderBook{
+		product:       product,
+		depths:        map[models.Side]*depth{models.SideBuy: bids, models.SideSell: asks},
+		orderIdWindow: newWindow(0, orderIdWindowCap),
+	}
+	return orderBook
 }
