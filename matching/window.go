@@ -18,6 +18,14 @@ type Window struct {
 
 type Bitmap []byte
 
+func Get(m []byte, i int64) bool {
+	return m[i/8]&tA[i%8] != 0
+}
+
+func (b Bitmap) Get(i int64) bool {
+	return Get(b, i)
+}
+
 func newWindow(min, max int64) Window {
 	return Window{
 		Min:    min,
@@ -59,6 +67,10 @@ func (w Window) put(val int64) error {
 		delta := val - w.Max
 		w.Min += delta
 		w.Max += delta
+		w.Bitmap.Set(val%w.Cap, true)
+	} else if w.Bitmap.Get(val % w.Cap) {
+		return fmt.Errorf("existed val %v", val)
+	} else {
 		w.Bitmap.Set(val%w.Cap, true)
 	}
 

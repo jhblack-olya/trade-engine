@@ -11,8 +11,12 @@ type Store interface {
 
 	AddBills(bills []*Bill) error
 
-	GetProductById(id string) (*Product, error)
-	GetProducts() ([]*Product, error)
+	AddFills(fills []*Fill) error
+	GetLastFillByProductId(productId string) (*Fill, error)
 
 	AddOrder(order *Order) error
+	UpdateOrderStatus(orderId int64, oldStatus, newStatus OrderStatus) (bool, error)
+
+	GetProductById(id string) (*Product, error)
+	GetProducts() ([]*Product, error)
 }
