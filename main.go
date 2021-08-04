@@ -21,7 +21,9 @@ func main() {
 	go models.NewBinLogStream().Start()
 
 	matching.StartEngine()
-
+	//fillExecutor add partial filled order to bills termed as delay bill
+	worker.NewFillExecutor().Start()
+	//BillExecutor settles the unsettled bills
 	worker.NewBillExecuter().Start()
 	rest.StartServer()
 	select {}

@@ -11,11 +11,18 @@ type Store interface {
 	UpdateAccount(account *Account) error
 
 	AddOrder(order *Order) error
+	GetOrderById(orderId int64) (*Order, error)
+	GetOrderByIdForUpdate(orderId int64) (*Order, error)
+	UpdateOrder(order *Order) error
 
 	AddBills(bills []*Bill) error
 	GetUnsettledBillsByUserId(userId int64, currency string) ([]*Bill, error)
 	GetUnsettledBills() ([]*Bill, error)
 	UpdateBill(bill *Bill) error
+
+	GetUnsettledFillsByOrderId(orderId int64) ([]*Fill, error)
+	UpdateFill(fill *Fill) error
+	GetUnsettledFills(count int32) ([]*Fill, error)
 
 	GetProductById(id string) (*Product, error)
 	GetProducts() ([]*Product, error)

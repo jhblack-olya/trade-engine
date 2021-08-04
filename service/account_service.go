@@ -129,3 +129,17 @@ func GetAccount(userId int64, currency string) (*models.Account, error) {
 func GetUnsettledBills() ([]*models.Bill, error) {
 	return mysql.SharedStore().GetUnsettledBills()
 }
+
+func AddDelayBill(store models.Store, userId int64, currency string, available, hold decimal.Decimal, billType models.BillType, notes string) (*models.Bill, error) {
+	bill := &models.Bill{
+		UserId:    userId,
+		Currency:  currency,
+		Available: available,
+		Hold:      hold,
+		Type:      billType,
+		Settled:   false,
+		Notes:     notes,
+	}
+	err := store.AddBills([]*models.Bill{bill})
+	return bill, err
+}
