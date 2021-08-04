@@ -15,4 +15,6 @@ type Store interface {
 	GetProducts() ([]*Product, error)
 
 	AddOrder(order *Order) error
+
+	GetTicksByProductId(productId string, granularity int64, limit int) ([]*Tick, error)
 }

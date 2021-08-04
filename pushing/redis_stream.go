@@ -41,6 +41,7 @@ func (s *redisStream) Start() {
 	}
 
 	go func() {
+		fmt.Println("go func..")
 		for {
 			ps := redisClient.Subscribe(models.TopicOrder)
 			_, err := ps.Receive()
@@ -58,6 +59,7 @@ func (s *redisStream) Start() {
 						continue
 					}
 
+					fmt.Println("publishing order", ChannelOrder.Format(order.ProductId, order.UserId))
 					s.sub.publish(ChannelOrder.Format(order.ProductId, order.UserId), OrderMessage{
 						UserId:        order.UserId,
 						Type:          "order",
@@ -82,6 +84,7 @@ func (s *redisStream) Start() {
 	}()
 
 	go func() {
+		fmt.Println("go func1..")
 		for {
 			ps := redisClient.Subscribe(models.TopicAccount)
 			_, err := ps.Receive()
@@ -98,6 +101,8 @@ func (s *redisStream) Start() {
 					if err != nil {
 						continue
 					}
+
+					fmt.Println("publishing account", ChannelFunds.FormatWithUserId(account.UserId))
 
 					s.sub.publish(ChannelFunds.FormatWithUserId(account.UserId), FundsMessage{
 						Type:      "funds",

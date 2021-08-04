@@ -13,6 +13,10 @@ func (t Channel) FormatWithUserId(userId int64) string {
 	return fmt.Sprintf("%v:%v", t, userId)
 }
 
+func (t Channel) FormatWithProductId(productId string) string {
+	return fmt.Sprintf("%v:%v", t, productId)
+}
+
 const (
 	Level2TypeSnapshot = Level2Type("snapshot")
 	Level2TypeUpdate   = Level2Type("l2update")
@@ -30,6 +34,24 @@ type Level2Change struct {
 	Side      string
 	Price     string
 	Size      string
+}
+
+type TickerMessage struct {
+	Type      string `json:"type"`
+	TradeId   int64  `json:"tradeId"`
+	Sequence  int64  `json:"sequence"`
+	Time      string `json:"time"`
+	ProductId string `json:"productId"`
+	Price     string `json:"price"`
+	Side      string `json:"side"`
+	LastSize  string `json:"lastSize"`
+	BestBid   string `json:"bestBid"`
+	BestAsk   string `json:"bestAsk"`
+	Volume24h string `json:"volume24h"`
+	Volume30d string `json:"volume30d"`
+	Low24h    string `json:"low24h"`
+	Open24h   string `json:"open24h"`
+	High24h   string `json:"high24h"`
 }
 
 type FundsMessage struct {

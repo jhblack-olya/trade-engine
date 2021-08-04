@@ -1,0 +1,128 @@
+package pushing
+
+import (
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/shopspring/decimal"
+	logger "github.com/siddontang/go-log/log"
+	"gitlab.com/gae4/trade-engine/matching"
+	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/gae4/trade-engine/service"
+)
+
+const intervalSec = 3
+
+type TickerStream struct {
+	productId      string
+	sub            *subscription
+	bestBid        decimal.Decimal
+	bestAsk        decimal.Decimal
+	logReader      matching.LogReader
+	lastTickerTime int64
+}
+
+func newTickerStream(productId string, sub *subscription, logReader matching.LogReader) *TickerStream {
+	fmt.Println("new ticker stream...")
+	s := &TickerStream{
+		productId:      productId,
+		sub:            sub,
+		logReader:      logReader,
+		lastTickerTime: time.Now().Unix() - intervalSec,
+	}
+	s.logReader.RegisterObserver(s)
+	return s
+}
+
+func (s *TickerStream) Start() {
+	// -1 : read from end
+	go s.logReader.Run(0, -1)
+}
+
+func (s *TickerStream) OnOpenLog(log *matching.OpenLog, offset int64) {
+	// do nothing
+}
+
+func (s *TickerStream) OnDoneLog(log *matching.DoneLog, offset int64) {
+	// do nothing
+}
+
+func (s *TickerStream) OnMatchLog(log *matching.MatchLog, offset int64) {
+	fmt.Println("on match ticker")
+	if time.Now().Unix()-s.lastTickerTime > intervalSec {
+		ticker, err := s.newTickerMessage(log)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		if ticker == nil {
+			return
+		}
+		lastTickers.Store(log.ProductId, ticker)
+		s.sub.publish(ChannelTicker.FormatWithProductId(log.ProductId), ticker)
+		s.lastTickerTime = time.Now().Unix()
+	}
+}
+
+func (s *TickerStream) newTickerMessage(log *matching.MatchLog) (*TickerMessage, error) {
+	fmt.Println("new ticker message", s.productId)
+	ticks24h, err := service.GetTicksByProductId(s.productId, 1*60, 24)
+	if err != nil {
+		return nil, err
+	}
+	tick24h := mergeTicks(ticks24h)
+	if tick24h == nil {
+		tick24h = &models.Tick{}
+	}
+
+	fmt.Printf("tick24h******************** %+v", tick24h)
+
+	ticks30d, err := service.GetTicksByProductId(s.productId, 24*60, 30)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("ticks30d******************** %+v", ticks30d)
+
+	tick30d := mergeTicks(ticks30d)
+	if tick30d == nil {
+		tick30d = &models.Tick{}
+	}
+
+	fmt.Printf("tick30d ^^^^^^^^^^^^^^^^^^^^^^^^^^^ %+v", tick30d)
+
+	return &TickerMessage{
+		Type:      "ticker",
+		TradeId:   log.TradeId,
+		Sequence:  log.Sequence,
+		Time:      log.Time.Format(time.RFC3339),
+		ProductId: log.ProductId,
+		Price:     log.Price.String(),
+		Side:      log.Side.String(),
+		LastSize:  log.Size.String(),
+		Open24h:   tick24h.Open.String(),
+		Low24h:    tick24h.Low.String(),
+		High24h:   tick24h.High.String(),
+		Volume24h: tick24h.Volume.String(),
+		Volume30d: tick30d.Volume.String(),
+	}, nil
+}
+
+func mergeTicks(ticks []*models.Tick) *models.Tick {
+	var t *models.Tick
+	for i := range ticks {
+		tick := ticks[len(ticks)-1-i]
+		if t == nil {
+			t = tick
+		} else {
+			t.Close = tick.Close
+			t.Low = decimal.Min(t.Low, tick.Low)
+			t.High = decimal.Max(t.High, tick.High)
+			t.Volume = t.Volume.Add(tick.Volume)
+		}
+	}
+	return t
+}
+
+var lastTickers = sync.Map{}
