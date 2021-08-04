@@ -15,4 +15,7 @@ type Store interface {
 	GetProducts() ([]*Product, error)
 
 	AddOrder(order *Order) error
+
+	GetLastTradeByProductId(productId string) (*Trade, error)
+	AddTrades(trades []*Trade) error
 }
