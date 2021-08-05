@@ -3,7 +3,6 @@ package matching
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/segmentio/kafka-go"
 	logger "github.com/siddontang/go-log/log"
@@ -51,18 +50,14 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 
 		var base Base
 		err = json.Unmarshal(kMessage.Value, &base)
-		fmt.Println("In run(")
-		fmt.Println("Base sequence fetch from reader in run() ", base.Sequence)
-		fmt.Println("And last seq is ", lastSeq)
 		if err != nil {
 			panic(err)
 		}
 
 		if base.Sequence <= lastSeq {
 			logger.Info("%v:%v discard log :%+v", r.productId, r.readerId, base)
-			fmt.Println("base sequence is less than or equal to lastseq so conitnue")
 			continue
-		} else if lastSeq > 0 && base.Sequence != (lastSeq+1) {
+		} else if lastSeq > 0 && base.Sequence != lastSeq+1 {
 			logger.Fatalf("non-sequence detected, lastSeq=%v seq=%v", lastSeq, base.Sequence)
 		}
 

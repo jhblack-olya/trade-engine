@@ -1,8 +1,6 @@
 package worker
 
 import (
-	"fmt"
-
 	"github.com/pingcap/log"
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
@@ -31,7 +29,6 @@ func NewFillMaker(logReader matching.LogReader) *FillMaker {
 		t.logOffset = lastFill.LogOffset
 		t.logSeq = lastFill.LogSeq
 	}
-	fmt.Printf("initial logSeq %v at logOffset %v", t.logSeq, t.logOffset)
 	t.logReader.RegisterObserver(t)
 	return t
 }
@@ -40,7 +37,6 @@ func (t *FillMaker) Start() {
 	if t.logOffset > 0 {
 		t.logOffset++
 	}
-	fmt.Printf("logSeq on Start() %v at offset %v", t.logSeq, t.logOffset)
 	go t.logReader.Run(t.logSeq, t.logOffset)
 	go t.flusher()
 }
@@ -94,7 +90,6 @@ func (t *FillMaker) flusher() {
 	for {
 		select {
 		case fill := <-t.fillCh:
-			fills = append(fills, fill)
 			fills = append(fills, fill)
 			if len(t.fillCh) > 0 && len(fills) < 1000 {
 				continue

@@ -65,8 +65,8 @@ func (w Window) put(val int64) error {
 		return fmt.Errorf("expired val %v, current Window [%v-%v]", val, w.Min, w.Max)
 	} else if val > w.Max {
 		delta := val - w.Max
-		w.Min += delta
-		w.Max += delta
+		w.Min = w.Min + delta
+		w.Max = w.Max + delta
 		w.Bitmap.Set(val%w.Cap, true)
 	} else if w.Bitmap.Get(val % w.Cap) {
 		return fmt.Errorf("existed val %v", val)
