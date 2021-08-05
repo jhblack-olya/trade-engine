@@ -23,14 +23,12 @@ func NewKafkaLogReader(readerId, productId string, brokers []string) LogReader {
 		MinBytes:  1,
 		MaxBytes:  10e6,
 	})
-
 	return &KafkaLogReader{readerId: readerId, productId: productId, reader: reader}
 }
 
 func (r *KafkaLogReader) GetProductId() string {
 	return r.productId
 }
-
 func (r *KafkaLogReader) RegisterObserver(observer LogObserver) {
 	r.observer = observer
 }
@@ -59,13 +57,12 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 		}
 
 		if base.Sequence <= lastSeq {
-			// Discard duplicate logs
-			logger.Infof("%v:%v discard log :%+v", r.productId, r.readerId, base)
+			logger.Info("%v:%v discard log :%+v", r.productId, r.readerId, base)
 			continue
 		} else if lastSeq > 0 && base.Sequence != lastSeq+1 {
-			// The seq is discontinuous, which may be a serious error in the matching engine
 			logger.Fatalf("non-sequence detected, lastSeq=%v seq=%v", lastSeq, base.Sequence)
 		}
+
 		lastSeq = base.Sequence
 
 		switch base.Type {
@@ -76,7 +73,6 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 				panic(err)
 			}
 			r.observer.OnOpenLog(&log, kMessage.Offset)
-
 		case LogTypeMatch:
 			var log MatchLog
 			err := json.Unmarshal(kMessage.Value, &log)
@@ -84,7 +80,6 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 				panic(err)
 			}
 			r.observer.OnMatchLog(&log, kMessage.Offset)
-
 		case LogTypeDone:
 			var log DoneLog
 			err := json.Unmarshal(kMessage.Value, &log)

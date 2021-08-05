@@ -41,7 +41,6 @@ func (s *redisStream) Start() {
 	}
 
 	go func() {
-		fmt.Println("go func..")
 		for {
 			ps := redisClient.Subscribe(models.TopicOrder)
 			_, err := ps.Receive()
@@ -84,7 +83,6 @@ func (s *redisStream) Start() {
 	}()
 
 	go func() {
-		fmt.Println("go func1..")
 		for {
 			ps := redisClient.Subscribe(models.TopicAccount)
 			_, err := ps.Receive()

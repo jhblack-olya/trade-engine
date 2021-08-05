@@ -78,7 +78,6 @@ func (e *Engine) runFetcher() {
 
 	for {
 		offset, order, err := e.orderReader.FetchOrder()
-		fmt.Println("run fetcher order reader offset ", offset)
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -103,7 +102,6 @@ func (e *Engine) runApplier() {
 				e.logCh <- log
 			}
 			orderOffset = offsetOrder.Offset
-			fmt.Println("orderOffset ", orderOffset)
 		case snapshot := <-e.snapshotReqCh:
 			delta := orderOffset - snapshot.OrderOffset
 			if delta <= 1000 {

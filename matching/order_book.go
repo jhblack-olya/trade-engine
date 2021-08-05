@@ -32,6 +32,14 @@ type orderBook struct {
 	orderIdWindow Window
 }
 
+type orderBookSnapshot struct {
+	ProductId     string
+	Orders        []BookOrder
+	TradeSeq      int64
+	LogSeq        int64
+	OrderIdWindow Window
+}
+
 type depth struct {
 	// all orders
 	orders map[int64]*BookOrder
@@ -62,8 +70,8 @@ func (o *orderBook) nextLogSeq() int64 {
 }
 
 func (o *orderBook) nextTradeSeq() int64 {
-	o.logSeq++
-	return o.logSeq
+	o.tradeSeq++
+	return o.tradeSeq
 }
 func newBookOrder(order *models.Order) *BookOrder {
 	return &BookOrder{

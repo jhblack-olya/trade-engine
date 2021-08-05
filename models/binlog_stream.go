@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"time"
 
@@ -112,15 +111,15 @@ func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest inte
 		f := v.Field(i)
 
 		colIdx := s.getColumnIndexByName(e, utils.SnakeCase(t.Field(i).Name))
-		fmt.Println("row[colIdx]", t.Field(i).Name, colIdx, row[colIdx])
-		fmt.Println("row", row)
+		// fmt.Println("row[colIdx]", t.Field(i).Name, colIdx, row[colIdx])
+		// fmt.Println("row", row)
 		rowVal := row[colIdx]
 
 		switch f.Type().Name() {
 		case "int64":
 			f.SetInt(rowVal.(int64))
 		case "string":
-			fmt.Println("rowVal", rowVal)
+			// fmt.Println("rowVal", rowVal)
 			f.SetString(rowVal.(string))
 		case "bool":
 			if rowVal.(int8) == 0 {
