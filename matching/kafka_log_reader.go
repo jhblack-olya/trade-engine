@@ -35,7 +35,9 @@ func (r *KafkaLogReader) RegisterObserver(observer LogObserver) {
 
 func (r *KafkaLogReader) Run(seq, offset int64) {
 	logger.Infof("%v:%v read from %v", r.productId, r.readerId, offset)
+
 	var lastSeq = seq
+
 	err := r.reader.SetOffset(offset)
 	if err != nil {
 		panic(err)
@@ -85,7 +87,7 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 				panic(err)
 			}
 			r.observer.OnDoneLog(&log, kMessage.Offset)
-		}
 
+		}
 	}
 }
