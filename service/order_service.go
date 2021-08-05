@@ -89,3 +89,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 
 	return order, db.CommitTx()
 }
+
+func UpdateOrderStatus(orderId int64, oldStatus, newStatus models.OrderStatus) (bool, error) {
+	return mysql.SharedStore().UpdateOrderStatus(orderId, oldStatus, newStatus)
+}

@@ -3,7 +3,6 @@ package matching
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/segmentio/kafka-go"
 	"gitlab.com/gae4/trade-engine/models"
@@ -27,7 +26,6 @@ func NewKafkaOrderReader(productId string, brokers []string) *KafkaOrderReader {
 		MinBytes:  1,
 		MaxBytes:  10e6,
 	})
-	fmt.Println("I am in reader ", s.orderReader)
 	return s
 }
 
