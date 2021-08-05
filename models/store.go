@@ -24,6 +24,14 @@ type Store interface {
 	UpdateFill(fill *Fill) error
 	GetUnsettledFills(count int32) ([]*Fill, error)
 
+	AddFills(fills []*Fill) error
+	GetLastFillByProductId(productId string) (*Fill, error)
+
+	UpdateOrderStatus(orderId int64, oldStatus, newStatus OrderStatus) (bool, error)
+
 	GetProductById(id string) (*Product, error)
 	GetProducts() ([]*Product, error)
+
+	GetLastTradeByProductId(productId string) (*Trade, error)
+	AddTrades(trades []*Trade) error
 }

@@ -1,7 +1,6 @@
 package matching
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -18,6 +17,14 @@ type Window struct {
 }
 
 type Bitmap []byte
+
+func Get(m []byte, i int64) bool {
+	return m[i/8]&tA[i%8] != 0
+}
+
+func (b Bitmap) Get(i int64) bool {
+	return Get(b, i)
+}
 
 func newWindow(min, max int64) Window {
 	return Window{
@@ -55,11 +62,15 @@ func (b Bitmap) Set(i int64, v bool) {
 }
 func (w Window) put(val int64) error {
 	if val <= w.Min {
-		return errors.New(fmt.Sprintf("expired val %v, current Window [%v-%v]", val, w.Min, w.Max))
+		return fmt.Errorf("expired val %v, current Window [%v-%v]", val, w.Min, w.Max)
 	} else if val > w.Max {
 		delta := val - w.Max
-		w.Min += delta
-		w.Max += delta
+		w.Min = w.Min + delta
+		w.Max = w.Max + delta
+		w.Bitmap.Set(val%w.Cap, true)
+	} else if w.Bitmap.Get(val % w.Cap) {
+		return fmt.Errorf("existed val %v", val)
+	} else {
 		w.Bitmap.Set(val%w.Cap, true)
 	}
 

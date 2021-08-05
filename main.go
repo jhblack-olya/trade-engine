@@ -2,8 +2,10 @@ package main
 
 import (
 	"github.com/prometheus/common/log"
+	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/gae4/trade-engine/service"
 	"gitlab.com/gae4/trade-engine/worker"
 
 	"net/http"
@@ -13,7 +15,7 @@ import (
 )
 
 func main() {
-
+	gbeConfig := conf.GetConfig()
 	go func() {
 		log.Info(http.ListenAndServe("localhost:6000", nil))
 	}()
@@ -25,6 +27,16 @@ func main() {
 	worker.NewFillExecutor().Start()
 	//BillExecutor settles the unsettled bills
 	worker.NewBillExecuter().Start()
+	products, err := service.GetProducts()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, product := range products {
+		worker.NewFillMaker(matching.NewKafkaLogReader("fillMaker", product.Id, gbeConfig.Kafka.Brokers)).Start()
+		worker.NewTradeMaker(matching.NewKafkaLogReader("tradeMaker", product.Id, gbeConfig.Kafka.Brokers)).Start()
+	}
+
 	rest.StartServer()
 	select {}
 }

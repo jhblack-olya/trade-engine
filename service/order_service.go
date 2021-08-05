@@ -224,3 +224,7 @@ func ExecuteFill(orderId int64) error {
 
 	return db.CommitTx()
 }
+
+func UpdateOrderStatus(orderId int64, oldStatus, newStatus models.OrderStatus) (bool, error) {
+	return mysql.SharedStore().UpdateOrderStatus(orderId, oldStatus, newStatus)
+}

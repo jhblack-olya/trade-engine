@@ -1,10 +1,18 @@
 package models
 
 import (
+	"encoding/json"
+	"reflect"
+	"time"
+
 	"github.com/go-redis/redis"
-	//"github.com/siddontang/go-mysql/canal"
+	"github.com/siddontang/go-log/log"
+
+	"github.com/shopspring/decimal"
+
 	"github.com/go-mysql-org/go-mysql/canal"
 	"gitlab.com/gae4/trade-engine/conf"
+	"gitlab.com/gae4/trade-engine/utils"
 )
 
 type BinLogStream struct {
@@ -24,6 +32,121 @@ func NewBinLogStream() *BinLogStream {
 	return &BinLogStream{
 		redisClient: redisClient,
 	}
+}
+
+func (s *BinLogStream) OnRow(e *canal.RowsEvent) error {
+	switch e.Table.Name {
+	case "g_order":
+		if e.Action == "delete" {
+			return nil
+		}
+
+		var n = 0
+		if e.Action == "update" {
+			n = 1
+		}
+
+		var v Order
+		s.parseRow(e, e.Rows[n], &v)
+
+		buf, _ := json.Marshal(v)
+		ret := s.redisClient.Publish(TopicOrder, buf)
+		if ret.Err() != nil {
+			log.Error(ret.Err())
+		}
+
+	case "g_account":
+		var n = 0
+		if e.Action == "update" {
+			n = 1
+		}
+
+		var v Account
+		s.parseRow(e, e.Rows[n], &v)
+
+		buf, _ := json.Marshal(v)
+		ret := s.redisClient.Publish(TopicAccount, buf)
+		if ret.Err() != nil {
+			log.Error(ret.Err())
+		}
+
+	case "g_fill":
+		if e.Action == "delete" || e.Action == "update" {
+			return nil
+		}
+
+		var v Fill
+		s.parseRow(e, e.Rows[0], &v)
+
+		buf, _ := json.Marshal(v)
+		ret := s.redisClient.LPush(TopicFill, buf)
+		if ret.Err() != nil {
+			log.Error(ret.Err())
+		}
+
+	case "g_bill":
+		if e.Action == "delete" || e.Action == "update" {
+			return nil
+		}
+
+		var v Bill
+		s.parseRow(e, e.Rows[0], &v)
+
+		buf, _ := json.Marshal(v)
+		ret := s.redisClient.LPush(TopicBill, buf)
+		if ret.Err() != nil {
+			log.Error(ret.Err())
+		}
+
+	}
+
+	return nil
+}
+
+func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest interface{}) {
+	v := reflect.ValueOf(dest).Elem()
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+
+		colIdx := s.getColumnIndexByName(e, utils.SnakeCase(t.Field(i).Name))
+		// fmt.Println("row[colIdx]", t.Field(i).Name, colIdx, row[colIdx])
+		// fmt.Println("row", row)
+		rowVal := row[colIdx]
+
+		switch f.Type().Name() {
+		case "int64":
+			f.SetInt(rowVal.(int64))
+		case "string":
+			// fmt.Println("rowVal", rowVal)
+			f.SetString(rowVal.(string))
+		case "bool":
+			if rowVal.(int8) == 0 {
+				f.SetBool(false)
+			} else {
+				f.SetBool(true)
+			}
+		case "Time":
+			if rowVal != nil {
+				f.Set(reflect.ValueOf(rowVal.(time.Time)))
+			}
+		case "Decimal":
+			d := decimal.NewFromFloat(rowVal.(float64))
+			f.Set(reflect.ValueOf(d))
+		default:
+			f.SetString(rowVal.(string))
+		}
+	}
+}
+
+func (s *BinLogStream) getColumnIndexByName(e *canal.RowsEvent, name string) int {
+	for id, value := range e.Table.Columns {
+		if value.Name == name {
+			return id
+		}
+	}
+	return -1
 }
 
 func (s *BinLogStream) Start() {

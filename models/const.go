@@ -1,6 +1,8 @@
 package models
 
 const (
-	TopicBill = "g_bill"
-	TopicFill = "g_fill"
+	TopicOrder   = "g_order"
+	TopicAccount = "g_account"
+	TopicFill    = "g_fill"
+	TopicBill    = "g_bill"
 )

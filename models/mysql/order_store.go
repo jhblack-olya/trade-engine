@@ -43,3 +43,11 @@ func (s *Store) GetOrderById(orderId int64) (*models.Order, error) {
 	}
 	return &order, err
 }
+
+func (s *Store) UpdateOrderStatus(orderId int64, oldStatus, newStatus models.OrderStatus) (bool, error) {
+	ret := s.db.Exec("UPDATE g_order SET `status`=?,updated_at=? WHERE id=? AND `status`=? ", newStatus, time.Now(), orderId, oldStatus)
+	if ret.Error != nil {
+		return false, ret.Error
+	}
+	return ret.RowsAffected > 0, nil
+}

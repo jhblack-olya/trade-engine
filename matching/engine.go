@@ -45,6 +45,15 @@ func NewEngine(product *models.Product, orderReader OrderReader, logStore LogSto
 		snapshotApproveReqCh: make(chan *Snapshot, 32),
 		snapshotCh:           make(chan *Snapshot, 32),
 	}
+
+	snapshot, err := snapshotStore.GetLatest()
+	if err != nil {
+		logger.Fatalf("get latest snapshot error: %v", err)
+	}
+	if snapshot != nil {
+		e.restore(snapshot)
+	}
+
 	return e
 }
 
@@ -69,7 +78,6 @@ func (e *Engine) runFetcher() {
 
 	for {
 		offset, order, err := e.orderReader.FetchOrder()
-		fmt.Println("run fetcher order reader offset ", offset)
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -94,7 +102,6 @@ func (e *Engine) runApplier() {
 				e.logCh <- log
 			}
 			orderOffset = offsetOrder.Offset
-			fmt.Println("orderOffset ", orderOffset)
 		case snapshot := <-e.snapshotReqCh:
 			delta := orderOffset - snapshot.OrderOffset
 			if delta <= 1000 {
