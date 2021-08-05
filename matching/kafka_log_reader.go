@@ -3,7 +3,6 @@ package matching
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/segmentio/kafka-go"
 	logger "github.com/siddontang/go-log/log"
@@ -24,7 +23,6 @@ func NewKafkaLogReader(readerId, productId string, brokers []string) LogReader {
 		MinBytes:  1,
 		MaxBytes:  10e6,
 	})
-	fmt.Printf("reader>>>>>>>> %+v", reader)
 	return &KafkaLogReader{readerId: readerId, productId: productId, reader: reader}
 }
 
@@ -59,21 +57,16 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 			panic(err)
 		}
 
-		fmt.Printf("base ***************** %+v", base)
-
 		if base.Sequence <= lastSeq {
-			fmt.Println("1")
 			// Discard duplicate logs
 			logger.Infof("%v:%v discard log :%+v", r.productId, r.readerId, base)
 			continue
 		} else if lastSeq > 0 && base.Sequence != lastSeq+1 {
-			fmt.Println("2")
 			// The seq is discontinuous, which may be a serious error in the matching engine
 			logger.Fatalf("non-sequence detected, lastSeq=%v seq=%v", lastSeq, base.Sequence)
 		}
 		lastSeq = base.Sequence
 
-		fmt.Println("base.Type", base.Type)
 		switch base.Type {
 		case LogTypeOpen:
 			var log OpenLog
