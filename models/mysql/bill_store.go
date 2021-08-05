@@ -3,6 +3,7 @@ package mysql
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"gitlab.com/gae4/trade-engine/models"
 )
@@ -19,4 +20,25 @@ func (s *Store) AddBills(bills []*models.Bill) error {
 	}
 	sql := fmt.Sprintf("INSERT INTO g_bill (created_at, user_id,currency,available,hold, type,settled,notes) VALUES %s", strings.Join(valueStrings, ","))
 	return s.db.Exec(sql).Error
+}
+
+func (s *Store) GetUnsettledBillsByUserId(userId int64, currency string) ([]*models.Bill, error) {
+	db := s.db.Where("settled=?", 0).Where("user_id=?", userId).
+		Where("currency =?", currency).Order("id ASC").Limit(100)
+	var bills []*models.Bill
+	err := db.Find(&bills).Error
+	return bills, err
+}
+
+func (s *Store) UpdateBill(bill *models.Bill) error {
+	bill.UpdatedAt = time.Now()
+	return s.db.Save(bill).Error
+}
+
+func (s *Store) GetUnsettledBills() ([]*models.Bill, error) {
+	db := s.db.Where("settled =?", 0).Order("id ASC").Limit(100)
+
+	var bills []*models.Bill
+	err := db.Find(&bills).Error
+	return bills, err
 }

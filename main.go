@@ -6,12 +6,12 @@ import (
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
 	"gitlab.com/gae4/trade-engine/service"
+	"gitlab.com/gae4/trade-engine/worker"
 
 	"net/http"
 	_ "net/http/pprof"
 
 	"gitlab.com/gae4/trade-engine/rest"
-	"gitlab.com/gae4/trade-engine/worker"
 )
 
 func main() {
@@ -23,6 +23,10 @@ func main() {
 	go models.NewBinLogStream().Start()
 
 	matching.StartEngine()
+	//fillExecutor add partial filled order to bills termed as delay bill
+	worker.NewFillExecutor().Start()
+	//BillExecutor settles the unsettled bills
+	worker.NewBillExecuter().Start()
 	products, err := service.GetProducts()
 	if err != nil {
 		panic(err)
