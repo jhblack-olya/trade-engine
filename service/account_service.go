@@ -59,6 +59,12 @@ func ExecuteBill(userId int64, currency string) error {
 	if err != nil {
 		return err
 	}
+
+	err = tx.CommitTx()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 func HoldBalance(db models.Store, userId int64, currency string, size decimal.Decimal, billType models.BillType) error {
