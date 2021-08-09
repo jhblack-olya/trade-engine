@@ -200,22 +200,6 @@ type Trade struct {
 	LogSeq       int64
 }
 
-type Tick struct {
-	Id          int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	ProductId   string          `gorm:"unique_index:p_g_t"`
-	Granularity int64           `gorm:"unique_index:p_g_t"`
-	Time        int64           `gorm:"unique_index:p_g_t"`
-	Open        decimal.Decimal `sql:"type:decimal(32,16);"`
-	High        decimal.Decimal `sql:"type:decimal(32,16);"`
-	Low         decimal.Decimal `sql:"type:decimal(32,16);"`
-	Close       decimal.Decimal `sql:"type:decimal(32,16);"`
-	Volume      decimal.Decimal `sql:"type:decimal(32,16);"`
-	LogOffset   int64
-	LogSeq      int64
-}
-
 type Config struct {
 	Id        int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
 	CreatedAt time.Time

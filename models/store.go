@@ -32,7 +32,6 @@ type Store interface {
 	GetProductById(id string) (*Product, error)
 	GetProducts() ([]*Product, error)
 
-	GetTicksByProductId(productId string, granularity int64, limit int) ([]*Tick, error)
 	GetLastTradeByProductId(productId string) (*Trade, error)
 	AddTrades(trades []*Trade) error
 }
