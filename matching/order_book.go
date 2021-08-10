@@ -62,6 +62,7 @@ type BookOrder struct {
 	Side      models.Side
 	Type      models.OrderType
 	ClientOid string
+	ExpiresIn int64
 }
 
 func (o *orderBook) nextLogSeq() int64 {
@@ -82,6 +83,7 @@ func newBookOrder(order *models.Order) *BookOrder {
 		Side:      order.Side,
 		Type:      order.Type,
 		ClientOid: order.ClientOid,
+		ExpiresIn: order.ExpiresIn,
 	}
 }
 
@@ -106,6 +108,17 @@ func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
 		d.queue.Remove(&priceOrderIdKey{order.Price, order.OrderId})
 	}
 	return nil
+}
+
+func (d *depth) UpdateDepth(orderId int64, timer int64) bool {
+	order, found := d.orders[orderId]
+	if !found {
+		return false
+
+	}
+
+	order.ExpiresIn = timer
+	return true
 }
 
 func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {

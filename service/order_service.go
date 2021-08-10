@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/shopspring/decimal"
 	"gitlab.com/gae4/trade-engine/models"
@@ -88,6 +89,140 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	}
 
 	return order, db.CommitTx()
+}
+
+func GetOrderById(orderId int64) (*models.Order, error) {
+	return mysql.SharedStore().GetOrderById(orderId)
+}
+
+func ExecuteFill(orderId int64) error {
+	db, err := mysql.SharedStore().BeginTx()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = db.Rollback() }()
+	order, err := db.GetOrderByIdForUpdate(orderId)
+	if err != nil {
+		return err
+	}
+	if order == nil {
+		return fmt.Errorf("order not found: %v", orderId)
+	}
+	if order.Status == models.OrderStatusFilled || order.Status == models.OrderStatusCancelled {
+		return fmt.Errorf("order status invalid: %v %v", orderId, order.Status)
+	}
+
+	product, err := GetProductById(order.ProductId)
+	if err != nil {
+		return err
+	}
+	if product == nil {
+		return fmt.Errorf("Product not found: %v", order.ProductId)
+	}
+
+	fills, err := mysql.SharedStore().GetUnsettledFillsByOrderId(orderId)
+	if err != nil {
+		return err
+	}
+	if len(fills) == 0 {
+		return nil
+	}
+
+	var bills []*models.Bill
+	for _, fill := range fills {
+		fill.Settled = true
+		notes := fmt.Sprintf("%v-%v", fill.OrderId, fill.Id)
+
+		if !fill.Done {
+			executedValue := fill.Size.Mul(fill.Price)
+			order.ExecutedValue = order.ExecutedValue.Add(executedValue)
+			order.FilledSize = order.FilledSize.Add(fill.Size)
+			if order.Side == models.SideBuy {
+				// Buy order, incr base
+				bill, err := AddDelayBill(db, order.UserId, product.BaseCurrency, fill.Size, decimal.Zero,
+					models.BillTypeTrade, notes)
+				if err != nil {
+					return err
+				}
+				bills = append(bills, bill)
+
+				//Buy order, decr quote
+				bill, err = AddDelayBill(db, order.UserId, product.QuoteCurrency, decimal.Zero, executedValue.Neg(),
+					models.BillTypeTrade, notes)
+				if err != nil {
+					return err
+				}
+				bills = append(bills, bill)
+
+			} else {
+				// 卖单，decr base
+				bill, err := AddDelayBill(db, order.UserId, product.BaseCurrency, decimal.Zero, fill.Size.Neg(),
+					models.BillTypeTrade, notes)
+				if err != nil {
+					return err
+				}
+				bills = append(bills, bill)
+
+				// 卖单，incr quote
+				bill, err = AddDelayBill(db, order.UserId, product.QuoteCurrency, executedValue, decimal.Zero,
+					models.BillTypeTrade, notes)
+				if err != nil {
+					return err
+				}
+				bills = append(bills, bill)
+			}
+
+		} else {
+			if fill.DoneReason == models.DoneReasonCancelled {
+				order.Status = models.OrderStatusCancelled
+			} else if fill.DoneReason == models.DoneReasonFilled {
+				order.Status = models.OrderStatusFilled
+			} else {
+				log.Fatalf("unknown done reason: %v", fill.DoneReason)
+			}
+
+			if order.Side == models.SideBuy {
+				// If it is a buy order, the remaining funds need to be thawed
+				remainingFunds := order.Funds.Sub(order.ExecutedValue)
+				if remainingFunds.GreaterThan(decimal.Zero) {
+					bill, err := AddDelayBill(db, order.UserId, product.QuoteCurrency, remainingFunds, remainingFunds.Neg(),
+						models.BillTypeTrade, notes)
+					if err != nil {
+						return err
+					}
+					bills = append(bills, bill)
+				}
+
+			} else {
+				// If it is a sell order, thaw the remaining size
+				remainingSize := order.Size.Sub(order.FilledSize)
+				if remainingSize.GreaterThan(decimal.Zero) {
+					bill, err := AddDelayBill(db, order.UserId, product.BaseCurrency, remainingSize, remainingSize.Neg(),
+						models.BillTypeTrade, notes)
+					if err != nil {
+						return err
+					}
+					bills = append(bills, bill)
+				}
+			}
+
+			break
+		}
+	}
+
+	err = db.UpdateOrder(order)
+	if err != nil {
+		return err
+	}
+
+	for _, fill := range fills {
+		err = db.UpdateFill(fill)
+		if err != nil {
+			return err
+		}
+	}
+
+	return db.CommitTx()
 }
 
 func UpdateOrderStatus(orderId int64, oldStatus, newStatus models.OrderStatus) (bool, error) {
