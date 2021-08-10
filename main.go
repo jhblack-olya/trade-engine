@@ -6,13 +6,12 @@ import (
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
 	"gitlab.com/gae4/trade-engine/pushing"
+	"gitlab.com/gae4/trade-engine/rest"
 	"gitlab.com/gae4/trade-engine/service"
 	"gitlab.com/gae4/trade-engine/worker"
 
 	"net/http"
 	_ "net/http/pprof"
-
-	"gitlab.com/gae4/trade-engine/rest"
 )
 
 func main() {

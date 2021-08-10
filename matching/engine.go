@@ -1,12 +1,13 @@
 package matching
 
 import (
-	"fmt"
 	"time"
 
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/models"
 )
+
+const duration = 10
 
 type Engine struct {
 	productId            string
@@ -105,7 +106,7 @@ func (e *Engine) runApplier() {
 		case offsetOrder := <-e.orderCh:
 			var logs []Log
 			if offsetOrder.Order.Status == models.OrderStatusCancelling {
-				fmt.Println("logs = e.OrderBook.CancelOrder(offsetOrder.Order)")
+				logs = e.OrderBook.CancelOrder(offsetOrder.Order)
 			} else {
 				logs = e.OrderBook.ApplyOrder(offsetOrder.Order)
 			}
@@ -208,10 +209,9 @@ func (e *Engine) restore(snapshot *Snapshot) {
 func (e *Engine) countDownTimer() {
 	for {
 		select {
-		case <-time.After(10 * time.Second):
+		case <-time.After(time.Duration(duration) * time.Second):
 			// After every 10 second decrement timer for limit order
 			e.decrementer()
-
 		}
 	}
 
@@ -220,8 +220,7 @@ func (e *Engine) countDownTimer() {
 func (e *Engine) decrementer() {
 
 	for key, val := range e.expiryMap {
-		//decrementing +1 second more to reduce latency issue
-		val.Order.ExpiresIn -= 11
+		val.Order.ExpiresIn -= 10
 		if val.Order.ExpiresIn <= 0 {
 			delete(e.expiryMap, key)
 			val.Order.Status = models.OrderStatusCancelling
