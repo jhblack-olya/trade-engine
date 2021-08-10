@@ -8,6 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gitlab.com/gae4/trade-engine/models"
 	"gitlab.com/gae4/trade-engine/models/mysql"
+	"gitlab.com/gae4/trade-engine/utils"
 )
 
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
@@ -60,16 +61,17 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	}
 
 	order := &models.Order{
-		ClientOid: clientOid,
-		UserId:    userId,
-		ProductId: productId,
-		Side:      side,
-		Size:      size,
-		Funds:     funds,
-		Price:     price,
-		Status:    models.OrderStatusNew,
-		Type:      orderType,
-		ExpiresIn: expiresIn,
+		ClientOid:   clientOid,
+		UserId:      userId,
+		ProductId:   productId,
+		Side:        side,
+		Size:        size,
+		Funds:       funds,
+		Price:       price,
+		Status:      models.OrderStatusNew,
+		Type:        orderType,
+		ExpiresIn:   expiresIn,
+		TimeInForce: utils.I64ToA(expiresIn),
 	}
 
 	db, err := mysql.SharedStore().BeginTx()

@@ -92,6 +92,8 @@ func (e *Engine) runFetcher() {
 				Offset: offset,
 				Order:  order,
 			}
+		} else if order.Type == models.OrderTypeMarket {
+			order.ExpiresIn = 0
 		}
 
 		e.orderCh <- &offsetOrder{offset, order}
