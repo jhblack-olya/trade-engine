@@ -95,6 +95,7 @@ func (e *Engine) runApplier() {
 			var logs []Log
 			if offsetOrder.Order.Status == models.OrderStatusCancelling {
 				fmt.Println("logs = e.OrderBook.CancelOrder(offsetOrder.Order)")
+				logs = e.OrderBook.CancelOrder(offsetOrder.Order)
 			} else {
 				logs = e.OrderBook.ApplyOrder(offsetOrder.Order)
 			}

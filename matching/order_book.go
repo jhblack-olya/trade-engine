@@ -237,6 +237,25 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 	return logs
 }
 
+func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
+	_ = o.orderIdWindow.put(order.Id)
+
+	bookOrder, found := o.depths[order.Side].orders[order.Id]
+	if !found {
+		return logs
+	}
+
+	// Order the size of all decr, equal to the remove operation
+	remainingSize := bookOrder.Size
+	err := o.depths[order.Side].decrSize(order.Id, bookOrder.Size)
+	if err != nil {
+		panic(err)
+	}
+
+	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled)
+	return append(logs, doneLog)
+}
+
 func (o *orderBook) Snapshot() orderBookSnapshot {
 	snapshot := orderBookSnapshot{
 		Orders:        make([]BookOrder, len(o.depths[models.SideSell].orders)+len(o.depths[models.SideBuy].orders)),
