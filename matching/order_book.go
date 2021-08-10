@@ -62,6 +62,7 @@ type BookOrder struct {
 	Side      models.Side
 	Type      models.OrderType
 	ClientOid string
+	ExpiresIn int64
 }
 
 func (o *orderBook) nextLogSeq() int64 {
@@ -82,6 +83,7 @@ func newBookOrder(order *models.Order) *BookOrder {
 		Side:      order.Side,
 		Type:      order.Type,
 		ClientOid: order.ClientOid,
+		ExpiresIn: order.ExpiresIn,
 	}
 }
 
@@ -106,6 +108,17 @@ func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
 		d.queue.Remove(&priceOrderIdKey{order.Price, order.OrderId})
 	}
 	return nil
+}
+
+func (d *depth) UpdateDepth(orderId int64, timer int64) bool {
+	order, found := d.orders[orderId]
+	if !found {
+		return false
+
+	}
+
+	order.ExpiresIn = timer
+	return true
 }
 
 func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
@@ -195,13 +208,13 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		}
 
 		// matched,write a log
-		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size)
+		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size, takerOrder.ExpiresIn, makerOrder.ExpiresIn)
 		logs = append(logs, matchLog)
 		fmt.Println("Last traded price ", price)
 		// maker is filled
 		if makerOrder.Size.IsZero() {
 
-			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled)
+			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn)
 			logs = append(logs, doneLog)
 		}
 	}
@@ -213,7 +226,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		//there was only partial order cross.
 		//so it will be added to order book and set next log sequence in order to execute this order in future
 		o.depths[takerOrder.Side].add(*takerOrder)
-		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder)
+		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder, takerOrder.ExpiresIn)
 		logs = append(logs, openLog)
 	} else {
 		//if marketorder and order dint execute cancel order
@@ -231,10 +244,29 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 				reason = models.DoneReasonCancelled
 			}
 		}
-		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason)
+		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason, takerOrder.ExpiresIn)
 		logs = append(logs, doneLog)
 	}
 	return logs
+}
+
+func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
+	_ = o.orderIdWindow.put(order.Id)
+
+	bookOrder, found := o.depths[order.Side].orders[order.Id]
+	if !found {
+		return logs
+	}
+
+	// Order the size of all decr, equal to the remove operation
+	remainingSize := bookOrder.Size
+	err := o.depths[order.Side].decrSize(order.Id, bookOrder.Size)
+	if err != nil {
+		panic(err)
+	}
+
+	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn)
+	return append(logs, doneLog)
 }
 
 func (o *orderBook) Snapshot() orderBookSnapshot {

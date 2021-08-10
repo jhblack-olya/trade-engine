@@ -160,7 +160,28 @@ type Order struct {
 	TimeInForce   string
 	Status        OrderStatus
 	Settled       bool
-	//ExpiresIn     int64
+	ExpiresIn     int64
+}
+type GFill struct {
+	Id         int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	TradeId    int64
+	OrderId    int64 `gorm:"unique_index:o_m"`
+	MessageSeq int64 `gorm:"unique_index:o_m"`
+	ProductId  string
+	Size       decimal.Decimal `sql:"type:decimal(32,16);"`
+	Price      decimal.Decimal `sql:"type:decimal(32,16);"`
+	Funds      decimal.Decimal `sql:"type:decimal(32,16);"`
+	Fee        decimal.Decimal `sql:"type:decimal(32,16);"`
+	Liquidity  string
+	Settled    bool
+	Side       Side
+	Done       bool
+	DoneReason DoneReason
+	LogOffset  int64
+	LogSeq     int64
+	ClientOid  string
 }
 
 type Fill struct {
@@ -183,6 +204,7 @@ type Fill struct {
 	LogOffset  int64
 	LogSeq     int64
 	ClientOid  string
+	ExpiresIn  int64 `gorm:"-"`
 }
 
 type Trade struct {
@@ -221,4 +243,10 @@ type Transaction struct {
 	ToAddress   string
 	Note        string
 	TxId        string
+}
+
+type Expiry struct {
+	OrderId   int64
+	Timer     int64
+	LogOffset int64
 }

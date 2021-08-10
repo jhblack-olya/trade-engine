@@ -1,12 +1,13 @@
 package matching
 
 import (
-	"fmt"
 	"time"
 
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/models"
 )
+
+const duration = 10
 
 type Engine struct {
 	productId            string
@@ -20,6 +21,7 @@ type Engine struct {
 	snapshotReqCh        chan *Snapshot
 	snapshotApproveReqCh chan *Snapshot
 	snapshotCh           chan *Snapshot
+	expiryMap            map[int64]*offsetOrder
 }
 
 type Snapshot struct {
@@ -33,6 +35,7 @@ type offsetOrder struct {
 }
 
 func NewEngine(product *models.Product, orderReader OrderReader, logStore LogStore, snapshotStore SnapshotStore) *Engine {
+	expire := make(map[int64]*offsetOrder)
 	e := &Engine{
 		productId:            product.Id,
 		OrderBook:            NewOrderBook(product),
@@ -44,6 +47,7 @@ func NewEngine(product *models.Product, orderReader OrderReader, logStore LogSto
 		snapshotReqCh:        make(chan *Snapshot, 32),
 		snapshotApproveReqCh: make(chan *Snapshot, 32),
 		snapshotCh:           make(chan *Snapshot, 32),
+		expiryMap:            expire,
 	}
 
 	snapshot, err := snapshotStore.GetLatest()
@@ -62,6 +66,7 @@ func (e *Engine) Start() {
 	go e.runApplier()
 	go e.runCommitter()
 	go e.runSnapshots()
+	go e.countDownTimer()
 }
 
 //runFetcher: go routine responsible for continuously pulling order from kafka topic pushed from orderapi
@@ -82,6 +87,13 @@ func (e *Engine) runFetcher() {
 			logger.Error(err)
 			continue
 		}
+		if _, ok := e.expiryMap[order.Id]; !ok && order.Type == models.OrderTypeLimit {
+			e.expiryMap[order.Id] = &offsetOrder{
+				Offset: offset,
+				Order:  order,
+			}
+		}
+
 		e.orderCh <- &offsetOrder{offset, order}
 	}
 }
@@ -94,7 +106,7 @@ func (e *Engine) runApplier() {
 		case offsetOrder := <-e.orderCh:
 			var logs []Log
 			if offsetOrder.Order.Status == models.OrderStatusCancelling {
-				fmt.Println("logs = e.OrderBook.CancelOrder(offsetOrder.Order)")
+				logs = e.OrderBook.CancelOrder(offsetOrder.Order)
 			} else {
 				logs = e.OrderBook.ApplyOrder(offsetOrder.Order)
 			}
@@ -192,4 +204,35 @@ func (e *Engine) restore(snapshot *Snapshot) {
 	logger.Infof("restoring: %+v", *snapshot)
 	e.orderOffset = snapshot.OrderOffset
 	e.OrderBook.Restore(&snapshot.OrderBookSnapshot)
+}
+
+func (e *Engine) countDownTimer() {
+	for {
+		select {
+		case <-time.After(time.Duration(duration) * time.Second):
+			// After every 10 second decrement timer for limit order
+			e.decrementer()
+
+		}
+	}
+
+}
+
+func (e *Engine) decrementer() {
+
+	for key, val := range e.expiryMap {
+		val.Order.ExpiresIn -= 10
+		if val.Order.ExpiresIn <= 0 {
+			delete(e.expiryMap, key)
+			val.Order.Status = models.OrderStatusCancelling
+			e.orderCh <- &offsetOrder{val.Offset, val.Order}
+		} else {
+			depth := e.OrderBook.depths[val.Order.Side]
+			status := depth.UpdateDepth(key, val.Order.ExpiresIn)
+			// if status false order not present in order book it may have completed or got cancelled prior
+			if !status {
+				delete(e.expiryMap, key)
+			}
+		}
+	}
 }

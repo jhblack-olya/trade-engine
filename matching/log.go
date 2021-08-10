@@ -32,6 +32,7 @@ type OpenLog struct {
 	RemainingSize decimal.Decimal
 	Price         decimal.Decimal
 	Side          models.Side
+	ExpiresIn     int64
 }
 
 type DoneLog struct {
@@ -41,6 +42,7 @@ type DoneLog struct {
 	RemainingSize decimal.Decimal
 	Reason        models.DoneReason
 	Side          models.Side
+	ExpiresIn     int64
 }
 
 type MatchLog struct {
@@ -53,9 +55,11 @@ type MatchLog struct {
 	Size           decimal.Decimal
 	TakerClientOid string
 	MakerClientOid string
+	TakerExpiresIn int64
+	MakerExpiresIn int64
 }
 
-func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal) *MatchLog {
+func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64) *MatchLog {
 	return &MatchLog{
 		Base:           Base{LogTypeMatch, logSeq, productId, time.Now()},
 		TradeId:        tradeSeq,
@@ -66,19 +70,22 @@ func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, mak
 		Size:           size,
 		TakerClientOid: takerOrder.ClientOid,
 		MakerClientOid: makerOrder.ClientOid,
+		TakerExpiresIn: takerTimer,
+		MakerExpiresIn: makerTimer,
 	}
 }
-func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder) *OpenLog {
+func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64) *OpenLog {
 	return &OpenLog{
 		Base:          Base{LogTypeOpen, logSeq, productId, time.Now()},
 		OrderId:       takerOrder.OrderId,
 		RemainingSize: takerOrder.Size,
 		Price:         takerOrder.Price,
 		Side:          takerOrder.Side,
+		ExpiresIn:     timer,
 	}
 }
 
-func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason) *DoneLog {
+func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64) *DoneLog {
 	return &DoneLog{
 		Base:          Base{LogTypeDone, logSeq, productId, time.Now()},
 		OrderId:       order.OrderId,
@@ -86,6 +93,7 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 		RemainingSize: remainingSize,
 		Reason:        reason,
 		Side:          order.Side,
+		ExpiresIn:     timer,
 	}
 }
 

@@ -106,13 +106,16 @@ func (s *BinLogStream) OnRow(e *canal.RowsEvent) error {
 func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest interface{}) {
 	v := reflect.ValueOf(dest).Elem()
 	t := v.Type()
-
-	for i := 0; i < v.NumField(); i++ {
+	num := v.NumField()
+	if e.Table.Name == "g_fill" {
+		num -= 1
+	}
+	for i := 0; i < num; i++ {
 		f := v.Field(i)
 
 		colIdx := s.getColumnIndexByName(e, utils.SnakeCase(t.Field(i).Name))
-		// fmt.Println("row[colIdx]", t.Field(i).Name, colIdx, row[colIdx])
-		// fmt.Println("row", row)
+		//	fmt.Println("row[colIdx]", t.Field(i).Name, colIdx, row[colIdx])
+		//	fmt.Println("row", row)
 		rowVal := row[colIdx]
 
 		switch f.Type().Name() {
