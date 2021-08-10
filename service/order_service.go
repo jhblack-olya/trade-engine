@@ -95,7 +95,7 @@ func GetOrderById(orderId int64) (*models.Order, error) {
 	return mysql.SharedStore().GetOrderById(orderId)
 }
 
-func ExecuteFill(orderId int64) error {
+func ExecuteFill(orderId, timer int64) error {
 	db, err := mysql.SharedStore().BeginTx()
 	if err != nil {
 		return err
@@ -209,7 +209,7 @@ func ExecuteFill(orderId int64) error {
 			break
 		}
 	}
-
+	order.ExpiresIn = timer
 	err = db.UpdateOrder(order)
 	if err != nil {
 		return err
@@ -225,6 +225,6 @@ func ExecuteFill(orderId int64) error {
 	return db.CommitTx()
 }
 
-func UpdateOrderStatus(orderId int64, oldStatus, newStatus models.OrderStatus) (bool, error) {
-	return mysql.SharedStore().UpdateOrderStatus(orderId, oldStatus, newStatus)
+func UpdateOrderStatus(orderId int64, oldStatus, newStatus models.OrderStatus, timer int64) (bool, error) {
+	return mysql.SharedStore().UpdateOrderStatus(orderId, oldStatus, newStatus, timer)
 }

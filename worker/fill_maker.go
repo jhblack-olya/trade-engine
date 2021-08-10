@@ -42,7 +42,7 @@ func (t *FillMaker) Start() {
 }
 
 func (t *FillMaker) OnOpenLog(log *matching.OpenLog, offset int64) {
-	_, _ = service.UpdateOrderStatus(log.OrderId, models.OrderStatusNew, models.OrderStatusOpen)
+	_, _ = service.UpdateOrderStatus(log.OrderId, models.OrderStatusNew, models.OrderStatusOpen, log.ExpiresIn)
 }
 
 func (t *FillMaker) OnMatchLog(log *matching.MatchLog, offset int64) {
@@ -57,6 +57,7 @@ func (t *FillMaker) OnMatchLog(log *matching.MatchLog, offset int64) {
 		Side:       log.Side,
 		LogOffset:  offset,
 		LogSeq:     log.Sequence,
+		ExpiresIn:  log.TakerExpiresIn,
 	}
 	t.fillCh <- &models.Fill{
 		TradeId:    log.TradeId,
@@ -69,6 +70,7 @@ func (t *FillMaker) OnMatchLog(log *matching.MatchLog, offset int64) {
 		Side:       log.Side.Opposite(),
 		LogOffset:  offset,
 		LogSeq:     log.Sequence,
+		ExpiresIn:  log.MakerExpiresIn,
 	}
 }
 
@@ -82,6 +84,7 @@ func (t *FillMaker) OnDoneLog(log *matching.DoneLog, offset int64) {
 		DoneReason: log.Reason,
 		LogOffset:  offset,
 		LogSeq:     log.Sequence,
+		ExpiresIn:  log.ExpiresIn,
 	}
 }
 

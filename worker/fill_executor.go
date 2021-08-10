@@ -45,7 +45,7 @@ func NewFillExecutor() *FillExecutor {
 						continue
 					}
 
-					err = service.ExecuteFill(fill.OrderId)
+					err = service.ExecuteFill(fill.OrderId, fill.ExpiresIn)
 					if err != nil {
 						log.Error(err)
 					}

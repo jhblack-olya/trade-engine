@@ -27,7 +27,7 @@ type Store interface {
 	AddFills(fills []*Fill) error
 	GetLastFillByProductId(productId string) (*Fill, error)
 
-	UpdateOrderStatus(orderId int64, oldStatus, newStatus OrderStatus) (bool, error)
+	UpdateOrderStatus(orderId int64, oldStatus, newStatus OrderStatus, timer int64) (bool, error)
 
 	GetProductById(id string) (*Product, error)
 	GetProducts() ([]*Product, error)

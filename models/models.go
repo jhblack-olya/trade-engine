@@ -183,6 +183,7 @@ type Fill struct {
 	LogOffset  int64
 	LogSeq     int64
 	ClientOid  string
+	ExpiresIn  int64
 }
 
 type Trade struct {

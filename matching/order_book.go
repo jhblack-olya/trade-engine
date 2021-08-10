@@ -208,13 +208,13 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		}
 
 		// matched,write a log
-		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size)
+		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size, takerOrder.ExpiresIn, makerOrder.ExpiresIn)
 		logs = append(logs, matchLog)
 		fmt.Println("Last traded price ", price)
 		// maker is filled
 		if makerOrder.Size.IsZero() {
 
-			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled)
+			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn)
 			logs = append(logs, doneLog)
 		}
 	}
@@ -226,7 +226,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		//there was only partial order cross.
 		//so it will be added to order book and set next log sequence in order to execute this order in future
 		o.depths[takerOrder.Side].add(*takerOrder)
-		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder)
+		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder, takerOrder.ExpiresIn)
 		logs = append(logs, openLog)
 	} else {
 		//if marketorder and order dint execute cancel order
@@ -244,7 +244,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 				reason = models.DoneReasonCancelled
 			}
 		}
-		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason)
+		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason, takerOrder.ExpiresIn)
 		logs = append(logs, doneLog)
 	}
 	return logs
