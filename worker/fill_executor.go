@@ -76,17 +76,18 @@ func (s *FillExecutor) runMqListener() {
 		if ret.Err() != nil {
 			log.Error(ret.Err())
 			continue
-		}
+		} else {
 
-		var fill models.Fill
-		err := json.Unmarshal([]byte(ret.Val()[1]), &fill)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
+			var fill models.Fill
+			err := json.Unmarshal([]byte(ret.Val()[1]), &fill)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
 
-		// Modulate according to orderId for sharding, the same orderId will be assigned to a fixed chan
-		s.workerChs[fill.OrderId%fillWorkerNum] <- &fill
+			// Modulate according to orderId for sharding, the same orderId will be assigned to a fixed chan
+			s.workerChs[fill.OrderId%fillWorkerNum] <- &fill
+		}
 	}
 }
 
