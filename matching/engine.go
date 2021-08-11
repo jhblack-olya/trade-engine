@@ -7,7 +7,7 @@ import (
 	"gitlab.com/gae4/trade-engine/models"
 )
 
-const duration = 10
+const duration = 1
 
 type Engine struct {
 	productId            string
@@ -92,6 +92,8 @@ func (e *Engine) runFetcher() {
 				Offset: offset,
 				Order:  order,
 			}
+		} else if order.Type == models.OrderTypeMarket {
+			order.ExpiresIn = 0
 		}
 
 		e.orderCh <- &offsetOrder{offset, order}
@@ -221,7 +223,7 @@ func (e *Engine) countDownTimer() {
 func (e *Engine) decrementer() {
 
 	for key, val := range e.expiryMap {
-		val.Order.ExpiresIn -= 10
+		val.Order.ExpiresIn = val.Order.ExpiresIn - 1
 		if val.Order.ExpiresIn <= 0 {
 			delete(e.expiryMap, key)
 			val.Order.Status = models.OrderStatusCancelling
