@@ -157,7 +157,7 @@ func ExecuteFill(orderId, timer int64) error {
 				bills = append(bills, bill)
 
 			} else {
-				// 卖单，decr base
+				// decr base
 				bill, err := AddDelayBill(db, order.UserId, product.BaseCurrency, decimal.Zero, fill.Size.Neg(),
 					models.BillTypeTrade, notes)
 				if err != nil {
@@ -165,7 +165,7 @@ func ExecuteFill(orderId, timer int64) error {
 				}
 				bills = append(bills, bill)
 
-				// 卖单，incr quote
+				// incr quote
 				bill, err = AddDelayBill(db, order.UserId, product.QuoteCurrency, executedValue, decimal.Zero,
 					models.BillTypeTrade, notes)
 				if err != nil {
