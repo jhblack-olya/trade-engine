@@ -1,43 +1,16 @@
 package rest
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	"github.com/shopspring/decimal"
-	"github.com/siddontang/go-log/log"
-	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
 	"gitlab.com/gae4/trade-engine/service"
 )
-
-var productId2Writer sync.Map
-
-func getWriter(productId string) *kafka.Writer {
-	writer, found := productId2Writer.Load(productId)
-	if found {
-		return writer.(*kafka.Writer)
-	}
-
-	gbeConfig := conf.GetConfig()
-
-	newWriter := kafka.NewWriter(kafka.WriterConfig{
-		Brokers:      gbeConfig.Kafka.Brokers,
-		Topic:        matching.TopicOrderPrefix + productId,
-		Balancer:     &kafka.LeastBytes{},
-		BatchTimeout: 5 * time.Millisecond,
-	})
-	productId2Writer.Store(productId, newWriter)
-	return newWriter
-}
 
 func PlaceOder(ctx *gin.Context) {
 	var req placeOrderRequest
@@ -77,21 +50,7 @@ func PlaceOder(ctx *gin.Context) {
 		return
 	}
 
-	submitOrder(order)
+	matching.SubmitOrder(order)
 
 	ctx.JSON(http.StatusOK, order)
-}
-
-func submitOrder(order *models.Order) {
-	buf, err := json.Marshal(order)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	fmt.Println("order.ProductId", order.ProductId)
-	err = getWriter(order.ProductId).WriteMessages(context.Background(), kafka.Message{Value: buf})
-	if err != nil {
-		log.Error(err)
-	}
 }

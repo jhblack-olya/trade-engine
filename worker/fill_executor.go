@@ -72,7 +72,7 @@ func (s *FillExecutor) runMqListener() {
 	})
 
 	for {
-		ret := redisClient.BRPop(time.Second*1000, models.TopicFill)
+		ret := redisClient.BRPop(0, models.TopicFill)
 		if ret.Err() != nil {
 			log.Error(ret.Err())
 			continue

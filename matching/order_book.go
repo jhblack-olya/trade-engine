@@ -287,7 +287,7 @@ func (o *orderBook) Snapshot() orderBookSnapshot {
 		snapshot.Orders[i] = *order
 		i++
 	}
-
+	fmt.Println("snapshot created \n\n ", snapshot)
 	return snapshot
 }
 

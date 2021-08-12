@@ -1,6 +1,7 @@
 package matching
 
 import (
+	"fmt"
 	"time"
 
 	logger "github.com/siddontang/go-log/log"
@@ -87,12 +88,13 @@ func (e *Engine) runFetcher() {
 			logger.Error(err)
 			continue
 		}
-		if _, ok := e.expiryMap[order.Id]; !ok && order.Type == models.OrderTypeLimit {
+		if _, ok := e.expiryMap[order.Id]; !ok && order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryMap[order.Id] = &offsetOrder{
 				Offset: offset,
 				Order:  order,
 			}
-		} else if order.Type == models.OrderTypeMarket {
+		}
+		if order.Type == models.OrderTypeMarket {
 			order.ExpiresIn = 0
 		}
 
@@ -116,9 +118,11 @@ func (e *Engine) runApplier() {
 				e.logCh <- log
 			}
 			orderOffset = offsetOrder.Offset
+
 		case snapshot := <-e.snapshotReqCh:
+			fmt.Println("delta= orderoffset - snapsjot.OrderOffset ", orderOffset, " - ", snapshot.OrderOffset, "= delta")
 			delta := orderOffset - snapshot.OrderOffset
-			if delta <= 1000 {
+			if delta <= 3 {
 				continue
 			}
 			logger.Infof("should take snapshot: %v %v-[%v]-%v->",
@@ -160,7 +164,9 @@ func (e *Engine) runCommitter() {
 			}
 
 		case snapshot := <-e.snapshotApproveReqCh:
+			fmt.Println("Seq ", seq, " snapshot.OrderBookSnapshot.LogSeq ", snapshot.OrderBookSnapshot.LogSeq)
 			if seq >= snapshot.OrderBookSnapshot.LogSeq {
+				fmt.Println("I am here becouse snapshot seq is less than or equal to seq")
 				e.snapshotCh <- snapshot
 				pending = nil
 				continue
@@ -177,17 +183,19 @@ func (e *Engine) runCommitter() {
 func (e *Engine) runSnapshots() {
 	// Order orderOffset at the last snapshot
 	orderOffset := e.orderOffset
-
+	fmt.Println("Called snapshot at order offset ", orderOffset)
 	for {
 		select {
 		case <-time.After(30 * time.Second):
 			// make a new snapshot request
+			fmt.Println("making snapshot request after 30 second")
 			e.snapshotReqCh <- &Snapshot{
 				OrderOffset: orderOffset,
 			}
 
 		case snapshot := <-e.snapshotCh:
 			// store snapshot
+			fmt.Println("Storing snapshot")
 			err := e.snapshotStore.Store(snapshot)
 			if err != nil {
 				logger.Warnf("store snapshot failed: %v", err)
@@ -212,7 +220,7 @@ func (e *Engine) countDownTimer() {
 	for {
 		select {
 		case <-time.After(time.Duration(duration) * time.Second):
-			// After every 10 second decrement timer for limit order
+			// After every 1 second decrement timer for limit order
 			e.decrementer()
 
 		}
@@ -224,10 +232,12 @@ func (e *Engine) decrementer() {
 
 	for key, val := range e.expiryMap {
 		val.Order.ExpiresIn = val.Order.ExpiresIn - 1
-		if val.Order.ExpiresIn <= 0 {
+		if val.Order.ExpiresIn == 0 {
 			delete(e.expiryMap, key)
 			val.Order.Status = models.OrderStatusCancelling
-			e.orderCh <- &offsetOrder{val.Offset, val.Order}
+			val.Order.UpdatedAt = time.Now()
+			SubmitOrder(val.Order)
+			//e.orderCh <- &offsetOrder{val.Offset, val.Order, 1}
 		} else {
 			depth := e.OrderBook.depths[val.Order.Side]
 			status := depth.UpdateDepth(key, val.Order.ExpiresIn)
