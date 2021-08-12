@@ -87,12 +87,13 @@ func (e *Engine) runFetcher() {
 			logger.Error(err)
 			continue
 		}
-		if _, ok := e.expiryMap[order.Id]; !ok && order.Type == models.OrderTypeLimit {
+		if _, ok := e.expiryMap[order.Id]; !ok && order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryMap[order.Id] = &offsetOrder{
 				Offset: offset,
 				Order:  order,
 			}
-		} else if order.Type == models.OrderTypeMarket {
+		}
+		if order.Type == models.OrderTypeMarket {
 			order.ExpiresIn = 0
 		}
 
@@ -116,6 +117,7 @@ func (e *Engine) runApplier() {
 				e.logCh <- log
 			}
 			orderOffset = offsetOrder.Offset
+
 		case snapshot := <-e.snapshotReqCh:
 			delta := orderOffset - snapshot.OrderOffset
 			if delta <= 1000 {
@@ -177,7 +179,6 @@ func (e *Engine) runCommitter() {
 func (e *Engine) runSnapshots() {
 	// Order orderOffset at the last snapshot
 	orderOffset := e.orderOffset
-
 	for {
 		select {
 		case <-time.After(30 * time.Second):
@@ -212,7 +213,7 @@ func (e *Engine) countDownTimer() {
 	for {
 		select {
 		case <-time.After(time.Duration(duration) * time.Second):
-			// After every 10 second decrement timer for limit order
+			// After every 1 second decrement timer for limit order
 			e.decrementer()
 
 		}
@@ -224,10 +225,12 @@ func (e *Engine) decrementer() {
 
 	for key, val := range e.expiryMap {
 		val.Order.ExpiresIn = val.Order.ExpiresIn - 1
-		if val.Order.ExpiresIn <= 0 {
+		if val.Order.ExpiresIn == 0 {
 			delete(e.expiryMap, key)
 			val.Order.Status = models.OrderStatusCancelling
-			e.orderCh <- &offsetOrder{val.Offset, val.Order}
+			val.Order.UpdatedAt = time.Now()
+			SubmitOrder(val.Order)
+			//e.orderCh <- &offsetOrder{val.Offset, val.Order, 1}
 		} else {
 			depth := e.OrderBook.depths[val.Order.Side]
 			status := depth.UpdateDepth(key, val.Order.ExpiresIn)
