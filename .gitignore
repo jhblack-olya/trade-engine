@@ -30,8 +30,6 @@ data/*
 .idea/*
 docker\
 conf.json
-*.mod
-*.sum
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
