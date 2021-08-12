@@ -1,6 +1,12 @@
 package matching
 
-import "github.com/segmentio/kafka-go"
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/segmentio/kafka-go"
+	"gitlab.com/gae4/trade-engine/models"
+)
 
 const (
 	TopicOrderPrefix = "matching_order_"
@@ -21,4 +27,20 @@ func NewKafkaOrderReader(productId string, brokers []string) *KafkaOrderReader {
 		MaxBytes:  10e6,
 	})
 	return s
+}
+
+func (s *KafkaOrderReader) SetOffset(offset int64) error {
+	return s.orderReader.SetOffset(offset)
+}
+
+func (s *KafkaOrderReader) FetchOrder() (offset int64, order *models.Order, err error) {
+	message, err := s.orderReader.FetchMessage(context.Background())
+	if err != nil {
+		return 0, nil, err
+	}
+	err = json.Unmarshal(message.Value, &order)
+	if err != nil {
+		return 0, nil, err
+	}
+	return message.Offset, order, nil
 }
