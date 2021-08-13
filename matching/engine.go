@@ -8,8 +8,6 @@ import (
 	"gitlab.com/gae4/trade-engine/models"
 )
 
-const duration = 1
-
 type Engine struct {
 	productId            string
 	orderReader          OrderReader
@@ -88,15 +86,7 @@ func (e *Engine) runFetcher() {
 			continue
 		}
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
-			/*e.expiryMap[order.Id] = &offsetOrder{
-				Offset: offset,
-				Order:  order,
-			}*/
-			e.expiryCh <- &offsetOrder{
-				Offset: offset,
-				Order:  order,
-			}
-
+			e.expiryCh <- &offsetOrder{offset, order}
 		}
 		if order.Type == models.OrderTypeMarket {
 			order.ExpiresIn = 0
@@ -220,81 +210,6 @@ func (e *Engine) restore(snapshot *Snapshot) {
 	e.OrderBook.Restore(&snapshot.OrderBookSnapshot)
 }
 
-/*
-func (e *Engine) countDownTimer() {
-	for {
-		select {
-		case <-time.After(time.Duration(duration) * time.Second):
-			// After every 1 second decrement timer for limit order
-			e.decrementer()
-
-		}
-	}
-
-}
-
-func (e *Engine) decrementer() {
-
-	for key, val := range e.expiryMap {
-		val.Order.ExpiresIn = val.Order.ExpiresIn - 1
-		if val.Order.ExpiresIn == 0 {
-			delete(e.expiryMap, key)
-			val.Order.Status = models.OrderStatusCancelling
-			val.Order.UpdatedAt = time.Now()
-			SubmitOrder(val.Order)
-			//e.orderCh <- &offsetOrder{val.Offset, val.Order, 1}
-		} else {
-			depth := e.OrderBook.depths[val.Order.Side]
-			status := depth.UpdateDepth(key, val.Order.ExpiresIn)
-			// if status false order not present in order book it may have completed or got cancelled prior
-			if !status {
-				delete(e.expiryMap, key)
-			}
-		}
-	}
-}
-
-func (e *Engine) countDownTimer() {
-	for {
-		select {
-		case <-time.After(time.Duration(duration) * time.Second):
-			// After every 1 second decrement timer for limit order
-			for key, val := range e.expiryMap {
-				go func(key int64, val *offsetOrder) {
-					select {
-					case updated := <-e.decrementer1(val):
-						if updated.Order.ExpiresIn == 0 {
-							fmt.Println("Getting cancelled order ", key)
-							delete(e.expiryMap, key)
-							updated.Order.Status = models.OrderStatusCancelling
-							updated.Order.UpdatedAt = time.Now()
-							SubmitOrder(updated.Order)
-							//e.orderCh <- &offsetOrder{val.Offset, val.Order, 1}
-						} else {
-							depth := e.OrderBook.depths[updated.Order.Side]
-							status := depth.UpdateDepth(key, updated.Order.ExpiresIn)
-							// if status false order not present in order book it may have completed or got cancelled prior
-							if !status {
-								delete(e.expiryMap, key)
-							}
-						}
-					}
-
-				}(key, val)
-
-			}
-		}
-	}
-
-}
-
-func (e *Engine) decrementer1(val *offsetOrder) chan *offsetOrder {
-	orderCh := make(chan *offsetOrder)
-	val.Order.ExpiresIn -= 1
-	orderCh <- val
-	return orderCh
-}*/
-
 func (e *Engine) countDownTimer() {
 	for {
 		select {
@@ -308,40 +223,12 @@ func (o *offsetOrder) timed(e *Engine) {
 
 	flag := 0
 	elapse := time.Duration(1) * time.Second
-	//expiresIn := o.Order.ExpiresIn
-	elapse1 := time.Duration(15) * time.Second
+	expiresIn := o.Order.ExpiresIn
 	for {
-		select {
-		case <-time.After(elapse):
-			fmt.Println("============== deEAD END===================")
-			fmt.Println("going to kill ", o.Order.Id, " its ", elapse)
-			o.Order.Status = models.OrderStatusCancelling
-			o.Order.UpdatedAt = time.Now()
-			SubmitOrder(o.Order)
-			flag = 1
-		case <-time.After(elapse1):
-			fmt.Println("********** 15 sec update***********")
-			fmt.Println("life time of ", o.Order.Id, " is ", elapse, " remaining ", elapse-elapse1)
-			o.Order.ExpiresIn = int64((time.Duration(o.Order.ExpiresIn) * time.Second) - elapse1)
-			depth := e.OrderBook.depths[o.Order.Side]
-			status := depth.UpdateDepth(o.Order.Id, o.Order.ExpiresIn)
-			// if status false order not present in order book it may have completed or got cancelled prior
-			if !status {
-				flag = 1
-			}
-		}
-		if flag == 1 {
-			break
-		}
-	}
-	/*for {
 		select {
 		case <-time.After(elapse):
 			expiresIn -= 1
 			if expiresIn == 0 {
-				fmt.Println("============== deEAD END===================")
-				fmt.Println("going to kill ", o.Order.Id, " its ", expiresIn)
-
 				o.Order.Status = models.OrderStatusCancelling
 				o.Order.UpdatedAt = time.Now()
 				SubmitOrder(o.Order)
@@ -358,6 +245,6 @@ func (o *offsetOrder) timed(e *Engine) {
 		if flag == 1 {
 			break
 		}
-	}*/
+	}
 
 }
