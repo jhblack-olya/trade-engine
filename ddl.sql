@@ -155,3 +155,8 @@ insert into `g_product`(`id`,`created_at`,`updated_at`,`base_currency`,`quote_cu
 ('LTC-USDT',null,null,'LTC','USDT',0.0010000000000000,1000.0000000000000000,4,2,0.01,0E-16,0E-16);
 
 ALTER TABLE `g_order` ADD `expires_in` bigint(20) DEFAULT 0;
+
+insert into `g_user`(`user_id`,`email`)values(1,`xyz@mail.com`);
+
+insert into `g_account`(`user_id`,`currency`,`hold`,`available`)values(1,`BTC`,0,200);
+insert into `g_account`(`user_id`,`currency`,`hold`,`available`)values(1,`USDT`,0,2000);

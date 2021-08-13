@@ -116,8 +116,8 @@ func (d *depth) UpdateDepth(orderId int64, timer int64) bool {
 		return false
 
 	}
-
 	order.ExpiresIn = timer
+
 	return true
 }
 
