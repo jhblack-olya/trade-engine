@@ -7,8 +7,6 @@ import (
 	"gitlab.com/gae4/trade-engine/models"
 )
 
-const duration = 1
-
 type Engine struct {
 	productId            string
 	orderReader          OrderReader
@@ -21,7 +19,7 @@ type Engine struct {
 	snapshotReqCh        chan *Snapshot
 	snapshotApproveReqCh chan *Snapshot
 	snapshotCh           chan *Snapshot
-	expiryMap            map[int64]*offsetOrder
+	expiryCh             chan *offsetOrder
 }
 
 type Snapshot struct {
@@ -35,7 +33,6 @@ type offsetOrder struct {
 }
 
 func NewEngine(product *models.Product, orderReader OrderReader, logStore LogStore, snapshotStore SnapshotStore) *Engine {
-	expire := make(map[int64]*offsetOrder)
 	e := &Engine{
 		productId:            product.Id,
 		OrderBook:            NewOrderBook(product),
@@ -47,7 +44,7 @@ func NewEngine(product *models.Product, orderReader OrderReader, logStore LogSto
 		snapshotReqCh:        make(chan *Snapshot, 32),
 		snapshotApproveReqCh: make(chan *Snapshot, 32),
 		snapshotCh:           make(chan *Snapshot, 32),
-		expiryMap:            expire,
+		expiryCh:             make(chan *offsetOrder, 10000),
 	}
 
 	snapshot, err := snapshotStore.GetLatest()
@@ -87,11 +84,8 @@ func (e *Engine) runFetcher() {
 			logger.Error(err)
 			continue
 		}
-		if _, ok := e.expiryMap[order.Id]; !ok && order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
-			e.expiryMap[order.Id] = &offsetOrder{
-				Offset: offset,
-				Order:  order,
-			}
+		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
+			e.expiryCh <- &offsetOrder{offset, order}
 		}
 		if order.Type == models.OrderTypeMarket {
 			order.ExpiresIn = 0
@@ -212,32 +206,38 @@ func (e *Engine) restore(snapshot *Snapshot) {
 func (e *Engine) countDownTimer() {
 	for {
 		select {
-		case <-time.After(time.Duration(duration) * time.Second):
-			// After every 1 second decrement timer for limit order
-			e.decrementer()
-
+		case o := <-e.expiryCh:
+			go o.timed(e)
 		}
 	}
 
 }
+func (o *offsetOrder) timed(e *Engine) {
 
-func (e *Engine) decrementer() {
-
-	for key, val := range e.expiryMap {
-		val.Order.ExpiresIn = val.Order.ExpiresIn - 1
-		if val.Order.ExpiresIn == 0 {
-			delete(e.expiryMap, key)
-			val.Order.Status = models.OrderStatusCancelling
-			val.Order.UpdatedAt = time.Now()
-			SubmitOrder(val.Order)
-			//e.orderCh <- &offsetOrder{val.Offset, val.Order, 1}
-		} else {
-			depth := e.OrderBook.depths[val.Order.Side]
-			status := depth.UpdateDepth(key, val.Order.ExpiresIn)
-			// if status false order not present in order book it may have completed or got cancelled prior
-			if !status {
-				delete(e.expiryMap, key)
+	flag := 0
+	elapse := time.Duration(1) * time.Second
+	expiresIn := o.Order.ExpiresIn
+	for {
+		select {
+		case <-time.After(elapse):
+			expiresIn -= 1
+			if expiresIn == 0 {
+				o.Order.Status = models.OrderStatusCancelling
+				o.Order.UpdatedAt = time.Now()
+				SubmitOrder(o.Order)
+				flag = 1
+			} else {
+				depth := e.OrderBook.depths[o.Order.Side]
+				status := depth.UpdateDepth(o.Order.Id, expiresIn)
+				// if status false order not present in order book it may have completed or got cancelled prior
+				if !status {
+					flag = 1
+				}
 			}
 		}
+		if flag == 1 {
+			break
+		}
 	}
+
 }
