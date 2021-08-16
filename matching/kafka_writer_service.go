@@ -36,13 +36,15 @@ func getWriter(productId string) *kafka.Writer {
 func SubmitOrder(order *models.Order) {
 	buf, err := json.Marshal(order)
 	if err != nil {
+		fmt.Println("kafka writer order marshall error ", err.Error())
 		log.Error(err.Error())
 		return
 	}
 
-	fmt.Println("order.ProductId", order.ProductId)
+	fmt.Println("pushing to kafka order.ProductId", order.ProductId, "order.Id", order.Id)
 	err = getWriter(order.ProductId).WriteMessages(context.Background(), kafka.Message{Value: buf})
 	if err != nil {
+		fmt.Println("kafka writer error ", err.Error())
 		log.Error(err.Error())
 	}
 }

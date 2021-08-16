@@ -7,7 +7,7 @@ import (
 	"gitlab.com/gae4/trade-engine/models"
 )
 
-var danglingExpiryOrderCh chan *models.Order
+//var danglingExpiryOrderMap map[int64]*models.Order
 
 type Engine struct {
 	productId            string
@@ -55,6 +55,7 @@ func NewEngine(product *models.Product, orderReader OrderReader, logStore LogSto
 	}
 	if snapshot != nil {
 		e.restore(snapshot)
+
 	}
 
 	return e
@@ -79,12 +80,10 @@ func (e *Engine) runFetcher() {
 	if err != nil {
 		logger.Fatalf("set order reader offset error: %v", err)
 	}
+	//snapOffset := e.orderOffset
 
 	for {
-		danglingOrder := <-danglingExpiryOrderCh
-		if danglingOrder != nil {
-			e.expiryCh <- &offsetOrder{0, danglingOrder}
-		}
+
 		offset, order, err := e.orderReader.FetchOrder()
 		if err != nil {
 			logger.Error(err)
@@ -127,6 +126,7 @@ func (e *Engine) runApplier() {
 				e.productId, snapshot.OrderOffset, delta, orderOffset)
 			snapshot.OrderBookSnapshot = e.OrderBook.Snapshot()
 			snapshot.OrderOffset = orderOffset
+			snapshot.OrderBookSnapshot.ProductId = e.productId
 			e.snapshotApproveReqCh <- snapshot
 		}
 	}

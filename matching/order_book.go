@@ -88,8 +88,12 @@ func newBookOrder(order *models.Order) *BookOrder {
 }
 
 func (d *depth) add(order BookOrder) {
-	d.orders[order.OrderId] = &order
-	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
+	if _, ok := d.orders[order.OrderId]; !ok {
+		d.orders[order.OrderId] = &order
+		d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
+	}
+	//	d.orders[order.OrderId] = &order
+	//	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
 }
 
 func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
@@ -298,13 +302,17 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 	if o.orderIdWindow.Cap == 0 {
 		o.orderIdWindow = newWindow(0, orderIdWindowCap)
 	}
-
+	//danglingExpiryOrderMap = make(map[int64]*models.Order)
 	for _, order := range snapshot.Orders {
-		danglingExpiryOrderCh = make(chan *models.Order)
 		o.depths[order.Side].add(order)
-		danglingExpiryOrderCh <- &models.Order{Id: order.OrderId, Type: order.Type, ExpiresIn: order.ExpiresIn,
-			Size: order.Size, Funds: order.Funds, Price: order.Price, Side: order.Side, ClientOid: order.ClientOid}
-		close(danglingExpiryOrderCh)
+		//danglingExpiryOrderMap[order.OrderId] =
+		danglingExpiryOrder := &models.Order{Id: order.OrderId, Type: order.Type, ExpiresIn: order.ExpiresIn,
+			Size: order.Size, Funds: order.Funds, Price: order.Price, Side: order.Side, ClientOid: order.ClientOid, ProductId: snapshot.ProductId}
+		SubmitOrder(danglingExpiryOrder)
+		fmt.Println("danglingExpiryOrder ", danglingExpiryOrder.ProductId, danglingExpiryOrder.Id)
+		//danglingExpiryOrderMap[order.OrderId] = &models.Order{Id: order.OrderId, Type: order.Type, ExpiresIn: order.ExpiresIn,
+		//	Size: order.Size, Funds: order.Funds, Price: order.Price, Side: order.Side, ClientOid: order.ClientOid}
+
 	}
 }
 
