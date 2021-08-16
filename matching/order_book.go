@@ -287,6 +287,7 @@ func (o *orderBook) Snapshot() orderBookSnapshot {
 		snapshot.Orders[i] = *order
 		i++
 	}
+	fmt.Printf("snapshot :: %+v", snapshot)
 	return snapshot
 }
 
@@ -299,7 +300,11 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 	}
 
 	for _, order := range snapshot.Orders {
+		danglingExpiryOrderCh = make(chan *models.Order)
 		o.depths[order.Side].add(order)
+		danglingExpiryOrderCh <- &models.Order{Id: order.OrderId, Type: order.Type, ExpiresIn: order.ExpiresIn,
+			Size: order.Size, Funds: order.Funds, Price: order.Price, Side: order.Side, ClientOid: order.ClientOid}
+		close(danglingExpiryOrderCh)
 	}
 }
 

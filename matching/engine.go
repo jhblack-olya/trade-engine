@@ -7,6 +7,8 @@ import (
 	"gitlab.com/gae4/trade-engine/models"
 )
 
+var danglingExpiryOrderCh chan *models.Order
+
 type Engine struct {
 	productId            string
 	orderReader          OrderReader
@@ -79,6 +81,10 @@ func (e *Engine) runFetcher() {
 	}
 
 	for {
+		danglingOrder := <-danglingExpiryOrderCh
+		if danglingOrder != nil {
+			e.expiryCh <- &offsetOrder{0, danglingOrder}
+		}
 		offset, order, err := e.orderReader.FetchOrder()
 		if err != nil {
 			logger.Error(err)
@@ -114,7 +120,7 @@ func (e *Engine) runApplier() {
 
 		case snapshot := <-e.snapshotReqCh:
 			delta := orderOffset - snapshot.OrderOffset
-			if delta <= 1000 {
+			if delta <= 3 {
 				continue
 			}
 			logger.Infof("should take snapshot: %v %v-[%v]-%v->",
