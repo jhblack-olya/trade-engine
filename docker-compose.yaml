@@ -1,0 +1,100 @@
+#  we have to make some mysql config changes. so we r using a diffrend docker file for it
+#  [mysqld]
+#  server_id=1
+#  log_bin = /var/log/mysql/mysql-bin.log
+#   in file /etc/mysql/my.cnf file
+##########################################
+#  1. docker network create gax-dev-nw
+##########################################
+#  2. docker-compose down && docker-compose build --no-cache && docker-compose up
+##########################################
+# 3. create new kafka topic
+# ./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_order_BTC-USDT --from-beginning
+# ./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_message_BTC-USDT --from-beginning
+
+
+
+
+
+
+##########################################
+version: '3.6'
+services:
+  golang:
+    container_name: gax-dev-nw-golang
+    restart: always
+    # dns:
+    #   - 127.0.0.1
+    build: .
+    ports:
+      - 28851:8011
+    restart: always
+    depends_on:
+      - db
+    networks:
+      - gax-dev-nw
+    links:
+      - db
+##########################################
+  db:
+    container_name: gax-dev-mysql
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile-mysql
+    restart: always
+    networks:
+      - gax-dev-nw
+    environment:
+      MYSQL_DATABASE: 'tradeengine'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'rootroot'
+    # volumes:
+    #   - ./mysql_data:/var/lib/mysql
+##########################################
+  redis:
+    container_name: gax-dev-redis
+    restart: always
+    networks:
+      - gax-dev-nw
+    image: redis
+    # volumes:
+    #   - ./data_redis:/data
+    entrypoint: redis-server --appendonly yes
+########################################## no need untill someone ask about it
+  # zookeeper:
+  #   image: "bitnami/zookeeper:latest"
+  #   container_name: "gax-dev-nw-zookeeper"
+  #   restart: always
+  #   networks:
+  #     - "gax-dev-nw"
+  #   ports:
+  #     - "2181"
+  #   environment:
+  #     - ALLOW_ANONYMOUS_LOGIN=yes
+##########################################
+  kafka:
+    image: spotify/kafka
+    container_name: "gax-dev-kafka"
+    restart: always
+    networks:
+      - "gax-dev-nw"
+    # ports:
+    #   - '2181:2181'
+    #   - '9092:9092'
+    environment:
+      - ADVERTISED_HOST=kafka
+      - ADVERTISED_PORT=9092
+    # depends_on:
+    #   - zookeeper
+##########################################
+
+networks:
+  gax-dev-nw:
+    external:
+      name: 'gax-dev-nw'
+
+# volumes:
+#   node_modules:
+#   my-db:
