@@ -62,7 +62,7 @@ services:
     # volumes:
     #   - ./data_redis:/data
     entrypoint: redis-server --appendonly yes
-########################################## no need untill someone ask about it
+########################################## no need for the moment
   # zookeeper:
   #   image: "bitnami/zookeeper:latest"
   #   container_name: "gax-dev-nw-zookeeper"
