@@ -304,6 +304,7 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 	}
 	//creating object for snapshot orders during restoration
 	for _, order := range snapshot.Orders {
+		fmt.Println("Orders getting restored ", order.OrderId)
 		o.depths[order.Side].add(order)
 		danglingOrder := &models.Order{
 			Id:        order.OrderId,

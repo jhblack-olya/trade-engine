@@ -73,10 +73,7 @@ func (e *Engine) Start() {
 //and pushing into order channel
 func (e *Engine) runFetcher() {
 	var offset = e.orderOffset
-	//setting offset to snapshots first order if snapshot exist
-	if len(e.OrderBook.DanglingOrders) > 0 {
-		offset -= int64(len(e.OrderBook.DanglingOrders) + 1)
-	} else if offset > 0 && len(e.OrderBook.DanglingOrders) == 0 {
+	if offset > 0 {
 		offset += 1
 	}
 	err := e.orderReader.SetOffset(offset)
@@ -89,7 +86,7 @@ func (e *Engine) runFetcher() {
 		for _, dOrder := range e.OrderBook.DanglingOrders {
 			if dOrder.Type == models.OrderTypeLimit && dOrder.ExpiresIn > 0 {
 				e.expiryCh <- &offsetOrder{offset, dOrder}
-				e.orderCh <- &offsetOrder{offset, dOrder}
+
 			}
 
 		}
@@ -104,6 +101,9 @@ func (e *Engine) runFetcher() {
 		}
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
+		} else if order.Type == models.OrderTypeLimit && order.ExpiresIn <= 0 {
+			order.Type = models.OrderTypeMarket // if limit order comes with expiry less than or equal to zero
+			// convert to market order
 		}
 		if order.Type == models.OrderTypeMarket {
 			order.ExpiresIn = 0
@@ -232,7 +232,6 @@ func (e *Engine) countDownTimer() {
 
 }
 func (o *offsetOrder) timed(e *Engine) {
-
 	flag := 0
 	elapse := time.Duration(1) * time.Second
 	expiresIn := o.Order.ExpiresIn
@@ -244,7 +243,7 @@ func (o *offsetOrder) timed(e *Engine) {
 				o.Order.Status = models.OrderStatusCancelling
 				o.Order.UpdatedAt = time.Now()
 				o.Order.ExpiresIn = 0
-				SubmitOrder(o.Order)
+				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
 				depth := e.OrderBook.depths[o.Order.Side]
