@@ -19,7 +19,7 @@
 
 
 ##########################################
-version: '3.6'
+version: '3.3'
 services:
   golang:
     container_name: gax-dev-nw-golang
@@ -51,8 +51,8 @@ services:
       MYSQL_USER: 'user'
       MYSQL_PASSWORD: 'password'
       MYSQL_ROOT_PASSWORD: 'rootroot'
-    # volumes:
-    #   - ./mysql_data:/var/lib/mysql
+    volumes:
+      - ./docker_mysql_data:/var/lib/mysql
 ##########################################
   redis:
     container_name: gax-dev-redis
@@ -60,8 +60,8 @@ services:
     networks:
       - gax-dev-nw
     image: redis
-    # volumes:
-    #   - ./data_redis:/data
+    volumes:
+      - ./docker_data_redis:/data
     entrypoint: redis-server --appendonly yes
 ########################################## no need for the moment
   # zookeeper:
@@ -96,6 +96,6 @@ networks:
     external:
       name: 'gax-dev-nw'
 
-# volumes:
-#   node_modules:
-#   my-db:
+volumes:
+  docker_data_redis:
+  docker_mysql_data:
