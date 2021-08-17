@@ -9,8 +9,9 @@
 #  2. docker-compose down && docker-compose build --no-cache && docker-compose up
 ##########################################
 # 3. create new kafka topic
-# ./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_order_BTC-USDT --from-beginning
-# ./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_message_BTC-USDT --from-beginning
+# docker exec -it <kafka> bash
+#     /opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_order_BTC-USDT --from-beginning
+#      /opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_message_BTC-USDT --from-beginning
 
 
 
