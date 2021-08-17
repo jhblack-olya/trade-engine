@@ -5,6 +5,7 @@ import (
 	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/gae4/trade-engine/order"
 	"gitlab.com/gae4/trade-engine/pushing"
 	"gitlab.com/gae4/trade-engine/rest"
 	"gitlab.com/gae4/trade-engine/service"
@@ -19,6 +20,8 @@ func main() {
 	go func() {
 		log.Info(http.ListenAndServe("localhost:6000", nil))
 	}()
+
+	order.ProcessOrder()
 
 	go models.NewBinLogStream().Start()
 
