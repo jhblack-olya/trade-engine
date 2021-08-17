@@ -158,5 +158,7 @@ ALTER TABLE `g_user` MODIFY `password_hash` varchar(255) null;
 
 insert into `g_user`(`user_id`,`email`)values(1,'xyz@mail.com');
 
-insert into `g_account`(`user_id`,`currency`,`hold`,`available`)values(1,'BTC',0,200);
-insert into `g_account`(`user_id`,`currency`,`hold`,`available`)values(1,'USDT',0,2000);
+insert into `g_account`(`user_id`,`currency`,`hold`,`available`)values(1,`BTC`,0,2000);
+insert into `g_account`(`user_id`,`currency`,`hold`,`available`)values(1,`USDT`,0,2000);
+
+ALTER TABLE `g_order` ADD `backend_order_id` varchar(255) DEFAULT NULL;

@@ -143,24 +143,25 @@ type Product struct {
 }
 
 type Order struct {
-	Id            int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	ProductId     string
-	UserId        int64
-	ClientOid     string
-	Size          decimal.Decimal `sql:"type:decimal(32,16);"`
-	Funds         decimal.Decimal `sql:"type:decimal(32,16);"`
-	FilledSize    decimal.Decimal `sql:"type:decimal(32,16);"`
-	ExecutedValue decimal.Decimal `sql:"type:decimal(32,16);"`
-	Price         decimal.Decimal `sql:"type:decimal(32,16);"`
-	FillFees      decimal.Decimal `sql:"type:decimal(32,16);"`
-	Type          OrderType
-	Side          Side
-	TimeInForce   string
-	Status        OrderStatus
-	Settled       bool
-	ExpiresIn     int64
+	Id             int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	ProductId      string
+	UserId         int64
+	ClientOid      string
+	Size           decimal.Decimal `sql:"type:decimal(32,16);"`
+	Funds          decimal.Decimal `sql:"type:decimal(32,16);"`
+	FilledSize     decimal.Decimal `sql:"type:decimal(32,16);"`
+	ExecutedValue  decimal.Decimal `sql:"type:decimal(32,16);"`
+	Price          decimal.Decimal `sql:"type:decimal(32,16);"`
+	FillFees       decimal.Decimal `sql:"type:decimal(32,16);"`
+	Type           OrderType
+	Side           Side
+	TimeInForce    string
+	Status         OrderStatus
+	Settled        bool
+	ExpiresIn      int64
+	BackendOrderId string
 }
 type GFill struct {
 	Id         int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
@@ -249,4 +250,18 @@ type Expiry struct {
 	OrderId   int64
 	Timer     int64
 	LogOffset int64
+}
+
+type PlaceOrderRequest struct {
+	ClientOid      string  `json:"client_oid"`
+	ProductId      string  `json:"productId"`
+	UserId         int64   `json:"userId"`
+	Size           float64 `json:"size"`
+	Funds          float64 `json:"funds"`
+	Price          float64 `json:"price"`
+	Side           string  `json:"side"`
+	Type           string  `json:"type"`        // [optional] limit or market (default is limit)
+	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
+	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
+	BackendOrderId string  `json:"backendOrderId"`
 }
