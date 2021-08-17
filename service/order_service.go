@@ -12,7 +12,7 @@ import (
 )
 
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
-	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId int64) (*models.Order, error) {
+	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string) (*models.Order, error) {
 	product, err := GetProductById(productId)
 	if err != nil {
 		return nil, err

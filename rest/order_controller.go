@@ -48,7 +48,7 @@ func PlaceOder(ctx *gin.Context) {
 	funds := decimal.NewFromFloat(req.Funds)
 
 	order, err := service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-		side, size, price, funds, req.ExpiresIn, 0)
+		side, size, price, funds, req.ExpiresIn, req.BackendOrderId)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, newMessageVo(err))

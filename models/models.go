@@ -161,7 +161,7 @@ type Order struct {
 	Status         OrderStatus
 	Settled        bool
 	ExpiresIn      int64
-	BackendOrderId int64
+	BackendOrderId string
 }
 type GFill struct {
 	Id         int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
@@ -263,5 +263,5 @@ type PlaceOrderRequest struct {
 	Type           string  `json:"type"`        // [optional] limit or market (default is limit)
 	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
-	BackendOrderId int64   `json:"backendOrderId"`
+	BackendOrderId string  `json:"backendOrderId"`
 }
