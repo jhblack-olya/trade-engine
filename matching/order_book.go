@@ -29,7 +29,8 @@ type orderBook struct {
 
 	// to prevent the order from being submitted to the order book repeatedly,
 	// a sliding window de duplication strategy is adopted.
-	orderIdWindow Window
+	orderIdWindow  Window
+	DanglingOrders []*models.Order
 }
 
 type orderBookSnapshot struct {
@@ -291,7 +292,6 @@ func (o *orderBook) Snapshot() orderBookSnapshot {
 		snapshot.Orders[i] = *order
 		i++
 	}
-	fmt.Printf("snapshot :: %+v", snapshot)
 	return snapshot
 }
 
@@ -302,17 +302,20 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 	if o.orderIdWindow.Cap == 0 {
 		o.orderIdWindow = newWindow(0, orderIdWindowCap)
 	}
-	//danglingExpiryOrderMap = make(map[int64]*models.Order)
+	//creating object for snapshot orders during restoration
 	for _, order := range snapshot.Orders {
 		o.depths[order.Side].add(order)
-		//danglingExpiryOrderMap[order.OrderId] =
-		danglingExpiryOrder := &models.Order{Id: order.OrderId, Type: order.Type, ExpiresIn: order.ExpiresIn,
-			Size: order.Size, Funds: order.Funds, Price: order.Price, Side: order.Side, ClientOid: order.ClientOid, ProductId: snapshot.ProductId}
-		SubmitOrder(danglingExpiryOrder)
-		fmt.Println("danglingExpiryOrder ", danglingExpiryOrder.ProductId, danglingExpiryOrder.Id)
-		//danglingExpiryOrderMap[order.OrderId] = &models.Order{Id: order.OrderId, Type: order.Type, ExpiresIn: order.ExpiresIn,
-		//	Size: order.Size, Funds: order.Funds, Price: order.Price, Side: order.Side, ClientOid: order.ClientOid}
-
+		danglingOrder := &models.Order{
+			Id:        order.OrderId,
+			ExpiresIn: order.ExpiresIn,
+			Side:      order.Side,
+			Size:      order.Size,
+			Status:    models.OrderStatusOpen,
+			Funds:     order.Funds,
+			Type:      order.Type,
+			ProductId: snapshot.ProductId,
+		}
+		o.DanglingOrders = append(o.DanglingOrders, danglingOrder)
 	}
 }
 

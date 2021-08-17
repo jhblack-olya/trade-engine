@@ -73,14 +73,27 @@ func (e *Engine) Start() {
 //and pushing into order channel
 func (e *Engine) runFetcher() {
 	var offset = e.orderOffset
-	if offset > 0 {
+	//setting offset to snapshots first order if snapshot exist
+	if len(e.OrderBook.DanglingOrders) > 0 {
+		offset -= int64(len(e.OrderBook.DanglingOrders) + 1)
+	} else if offset > 0 && len(e.OrderBook.DanglingOrders) == 0 {
 		offset += 1
 	}
 	err := e.orderReader.SetOffset(offset)
 	if err != nil {
 		logger.Fatalf("set order reader offset error: %v", err)
 	}
-	//snapOffset := e.orderOffset
+
+	//Sending snapshot orders to timed and applier before new order comes in
+	if len(e.OrderBook.DanglingOrders) > 0 {
+		for _, dOrder := range e.OrderBook.DanglingOrders {
+			if dOrder.Type == models.OrderTypeLimit && dOrder.ExpiresIn > 0 {
+				e.expiryCh <- &offsetOrder{offset, dOrder}
+				e.orderCh <- &offsetOrder{offset, dOrder}
+			}
+
+		}
+	}
 
 	for {
 
@@ -119,7 +132,7 @@ func (e *Engine) runApplier() {
 
 		case snapshot := <-e.snapshotReqCh:
 			delta := orderOffset - snapshot.OrderOffset
-			if delta <= 3 {
+			if delta <= 1000 {
 				continue
 			}
 			logger.Infof("should take snapshot: %v %v-[%v]-%v->",
@@ -230,6 +243,7 @@ func (o *offsetOrder) timed(e *Engine) {
 			if expiresIn == 0 {
 				o.Order.Status = models.OrderStatusCancelling
 				o.Order.UpdatedAt = time.Now()
+				o.Order.ExpiresIn = 0
 				SubmitOrder(o.Order)
 				flag = 1
 			} else {
