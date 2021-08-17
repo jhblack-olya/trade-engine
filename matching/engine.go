@@ -72,9 +72,12 @@ func (e *Engine) Start() {
 func (e *Engine) runFetcher() {
 	var offset = e.orderOffset
 	//fmt.Println("Offset before +1 ", offset)
-	if len(e.OrderBook.DanglingOrders) > 0 {
+	/*if len(e.OrderBook.DanglingOrders) > 0 {
 		offset -= int64(len(e.OrderBook.DanglingOrders) + 1)
 	} else if offset > 0 && len(e.OrderBook.DanglingOrders) == 0 {
+		offset += 1
+	}*/
+	if offset > 0 {
 		offset += 1
 	}
 	err := e.orderReader.SetOffset(offset)
@@ -87,7 +90,7 @@ func (e *Engine) runFetcher() {
 		for _, dOrder := range e.OrderBook.DanglingOrders {
 			if dOrder.Type == models.OrderTypeLimit && dOrder.ExpiresIn > 0 {
 				e.expiryCh <- &offsetOrder{offset, dOrder}
-				e.orderCh <- &offsetOrder{offset, dOrder}
+
 			}
 
 		}
@@ -100,6 +103,9 @@ func (e *Engine) runFetcher() {
 		}
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
+		} else if order.Type == models.OrderTypeLimit && order.ExpiresIn <= 0 {
+			order.Type = models.OrderTypeMarket // if limit order comes with expiry less than or equal to zero
+			// convert to market order
 		}
 		if order.Type == models.OrderTypeMarket {
 			order.ExpiresIn = 0
@@ -234,7 +240,6 @@ func (e *Engine) countDownTimer() {
 
 }
 func (o *offsetOrder) timed(e *Engine) {
-
 	flag := 0
 	elapse := time.Duration(1) * time.Second
 	expiresIn := o.Order.ExpiresIn
@@ -247,13 +252,14 @@ func (o *offsetOrder) timed(e *Engine) {
 				o.Order.Status = models.OrderStatusCancelling
 				o.Order.UpdatedAt = time.Now()
 				o.Order.ExpiresIn = 0
-				SubmitOrder(o.Order)
+				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
 				depth := e.OrderBook.depths[o.Order.Side]
 				status := depth.UpdateDepth(o.Order.Id, expiresIn)
 				// if status false order not present in order book it may have completed or got cancelled prior
 				if !status {
+					fmt.Println("Not there in order book ", o.Order.Id, " exiting expiry loop")
 					flag = 1
 				}
 			}

@@ -112,6 +112,10 @@ func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
 }
 
 func (d *depth) UpdateDepth(orderId int64, timer int64) bool {
+	fmt.Println("order book ", len(d.orders))
+	for _, val := range d.orders {
+		fmt.Println("value in order book ", val.OrderId)
+	}
 	order, found := d.orders[orderId]
 	if !found {
 		return false
@@ -301,6 +305,7 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 	}
 
 	for _, order := range snapshot.Orders {
+		fmt.Println("Orders getting restored ", order.OrderId)
 		o.depths[order.Side].add(order)
 		danglingOrder := &models.Order{
 			Id:        order.OrderId,
