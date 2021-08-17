@@ -71,14 +71,27 @@ func (e *Engine) Start() {
 //and pushing into order channel
 func (e *Engine) runFetcher() {
 	var offset = e.orderOffset
-	if offset > 0 {
+	//fmt.Println("Offset before +1 ", offset)
+	if len(e.OrderBook.DanglingOrders) > 0 {
+		offset -= int64(len(e.OrderBook.DanglingOrders) + 1)
+	} else if offset > 0 && len(e.OrderBook.DanglingOrders) == 0 {
 		offset += 1
 	}
 	err := e.orderReader.SetOffset(offset)
 	if err != nil {
 		logger.Fatalf("set order reader offset error: %v", err)
 	}
+	fmt.Println("status of dangling orders", e.OrderBook.DanglingOrders)
+	if len(e.OrderBook.DanglingOrders) > 0 {
+		//snapOffset := offset - int64(len(e.OrderBook.DanglingOrders))
+		for _, dOrder := range e.OrderBook.DanglingOrders {
+			if dOrder.Type == models.OrderTypeLimit && dOrder.ExpiresIn > 0 {
+				e.expiryCh <- &offsetOrder{offset, dOrder}
+				e.orderCh <- &offsetOrder{offset, dOrder}
+			}
 
+		}
+	}
 	for {
 		offset, order, err := e.orderReader.FetchOrder()
 		if err != nil {
@@ -106,6 +119,7 @@ func (e *Engine) runApplier() {
 			if offsetOrder.Order.Status == models.OrderStatusCancelling {
 				logs = e.OrderBook.CancelOrder(offsetOrder.Order)
 			} else {
+				fmt.Println("offset order apply order ", offsetOrder.Order.Id)
 				logs = e.OrderBook.ApplyOrder(offsetOrder.Order)
 			}
 			for _, log := range logs {
@@ -227,10 +241,12 @@ func (o *offsetOrder) timed(e *Engine) {
 	for {
 		select {
 		case <-time.After(elapse):
+			fmt.Println("Order in expiry ", o.Order.Id, " expires at ", o.Order.ExpiresIn)
 			expiresIn -= 1
 			if expiresIn == 0 {
 				o.Order.Status = models.OrderStatusCancelling
 				o.Order.UpdatedAt = time.Now()
+				o.Order.ExpiresIn = 0
 				SubmitOrder(o.Order)
 				flag = 1
 			} else {

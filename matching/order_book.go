@@ -29,7 +29,8 @@ type orderBook struct {
 
 	// to prevent the order from being submitted to the order book repeatedly,
 	// a sliding window de duplication strategy is adopted.
-	orderIdWindow Window
+	orderIdWindow  Window
+	DanglingOrders []*models.Order
 }
 
 type orderBookSnapshot struct {
@@ -301,6 +302,17 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 
 	for _, order := range snapshot.Orders {
 		o.depths[order.Side].add(order)
+		danglingOrder := &models.Order{
+			Id:        order.OrderId,
+			ExpiresIn: order.ExpiresIn,
+			Side:      order.Side,
+			Size:      order.Size,
+			Status:    models.OrderStatusOpen,
+			Funds:     order.Funds,
+			Type:      order.Type,
+			ProductId: snapshot.ProductId,
+		}
+		o.DanglingOrders = append(o.DanglingOrders, danglingOrder)
 	}
 }
 
