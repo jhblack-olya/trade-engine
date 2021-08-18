@@ -51,8 +51,8 @@ services:
       MYSQL_USER: 'user'
       MYSQL_PASSWORD: 'password'
       MYSQL_ROOT_PASSWORD: 'rootroot'
-    # volumes:
-    #   - ./docker_mysql_data:/var/lib/mysql
+    volumes:
+      - ./docker_mysql_data:/var/lib/mysql
 ##########################################
   redis:
     container_name: gax-dev-redis
@@ -60,8 +60,8 @@ services:
     networks:
       - gax-dev-nw
     image: redis
-    # volumes:
-    #   - ./docker_data_redis:/data
+    volumes:
+      - ./docker_data_redis:/data
     entrypoint: redis-server --appendonly yes
 
 
@@ -75,8 +75,8 @@ services:
       - "gax-dev-nw"
     # ports:
     #   - 2181:2181
-    # volumes:
-    #   - zookeeper_data:/bitnami
+    volumes:
+      - ./zookeeper_data:/bitnami
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
 
@@ -88,8 +88,8 @@ services:
       - "gax-dev-nw"
     # ports:
     #   - 9092:9092
-    # volumes:
-    #   - kafka_data:/bitnami
+    volumes:
+      - ./kafka_data:/bitnami
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
