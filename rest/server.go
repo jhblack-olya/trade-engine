@@ -26,6 +26,7 @@ func (server *HttpServer) Start() {
 	private := r.Group("/", checkAPIkey())
 	{
 		private.POST("/api/orders", PlaceOder)
+		private.POST("/api/backendOrder", BackendOrder)
 	}
 
 	err := r.Run(server.addr)
