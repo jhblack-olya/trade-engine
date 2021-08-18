@@ -2,9 +2,9 @@
     "dataSource": {
       "driverName": "mysql",
       "addr": "localhost:3306",
-      "database": "tradeengine",
+      "database": "gae",
       "user": "root",
-      "password": "root",
+      "password": "@ccub0p$",
       "enableAutoMigrate": false
     },
     "redis": {
