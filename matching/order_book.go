@@ -29,7 +29,8 @@ type orderBook struct {
 
 	// to prevent the order from being submitted to the order book repeatedly,
 	// a sliding window de duplication strategy is adopted.
-	orderIdWindow Window
+	orderIdWindow  Window
+	DanglingOrders []*models.Order
 }
 
 type orderBookSnapshot struct {
@@ -88,8 +89,12 @@ func newBookOrder(order *models.Order) *BookOrder {
 }
 
 func (d *depth) add(order BookOrder) {
-	d.orders[order.OrderId] = &order
-	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
+	if _, ok := d.orders[order.OrderId]; !ok {
+		d.orders[order.OrderId] = &order
+		d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
+	}
+	//	d.orders[order.OrderId] = &order
+	//	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
 }
 
 func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
@@ -297,9 +302,21 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 	if o.orderIdWindow.Cap == 0 {
 		o.orderIdWindow = newWindow(0, orderIdWindowCap)
 	}
-
+	//creating object for snapshot orders during restoration
 	for _, order := range snapshot.Orders {
+		fmt.Println("Orders getting restored ", order.OrderId)
 		o.depths[order.Side].add(order)
+		danglingOrder := &models.Order{
+			Id:        order.OrderId,
+			ExpiresIn: order.ExpiresIn,
+			Side:      order.Side,
+			Size:      order.Size,
+			Status:    models.OrderStatusOpen,
+			Funds:     order.Funds,
+			Type:      order.Type,
+			ProductId: snapshot.ProductId,
+		}
+		o.DanglingOrders = append(o.DanglingOrders, danglingOrder)
 	}
 }
 

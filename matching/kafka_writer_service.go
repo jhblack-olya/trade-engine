@@ -3,7 +3,6 @@ package matching
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -33,6 +32,18 @@ func getWriter(productId string) *kafka.Writer {
 	return newWriter
 }
 
+func (e *Engine) SubmitOrder(order *models.Order) {
+	buf, err := json.Marshal(order)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	err = getWriter(e.productId).WriteMessages(context.Background(), kafka.Message{Value: buf})
+	if err != nil {
+		log.Error(err.Error())
+	}
+}
+
 func SubmitOrder(order *models.Order) {
 	buf, err := json.Marshal(order)
 	if err != nil {
@@ -40,7 +51,6 @@ func SubmitOrder(order *models.Order) {
 		return
 	}
 
-	fmt.Println("order.ProductId", order.ProductId)
 	err = getWriter(order.ProductId).WriteMessages(context.Background(), kafka.Message{Value: buf})
 	if err != nil {
 		log.Error(err.Error())
