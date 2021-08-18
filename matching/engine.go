@@ -7,6 +7,8 @@ import (
 	"gitlab.com/gae4/trade-engine/models"
 )
 
+//var danglingExpiryOrderMap map[int64]*models.Order
+
 type Engine struct {
 	productId            string
 	orderReader          OrderReader
@@ -53,6 +55,7 @@ func NewEngine(product *models.Product, orderReader OrderReader, logStore LogSto
 	}
 	if snapshot != nil {
 		e.restore(snapshot)
+
 	}
 
 	return e
@@ -78,7 +81,19 @@ func (e *Engine) runFetcher() {
 		logger.Fatalf("set order reader offset error: %v", err)
 	}
 
+	//Sending snapshot orders to timed and applier before new order comes in
+	if len(e.OrderBook.DanglingOrders) > 0 {
+		for _, dOrder := range e.OrderBook.DanglingOrders {
+			if dOrder.Type == models.OrderTypeLimit && dOrder.ExpiresIn > 0 {
+				e.expiryCh <- &offsetOrder{offset, dOrder}
+
+			}
+
+		}
+	}
+
 	for {
+
 		offset, order, err := e.orderReader.FetchOrder()
 		if err != nil {
 			logger.Error(err)
@@ -86,6 +101,9 @@ func (e *Engine) runFetcher() {
 		}
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
+		} else if order.Type == models.OrderTypeLimit && order.ExpiresIn <= 0 {
+			order.Type = models.OrderTypeMarket // if limit order comes with expiry less than or equal to zero
+			// convert to market order
 		}
 		if order.Type == models.OrderTypeMarket {
 			order.ExpiresIn = 0
@@ -121,6 +139,7 @@ func (e *Engine) runApplier() {
 				e.productId, snapshot.OrderOffset, delta, orderOffset)
 			snapshot.OrderBookSnapshot = e.OrderBook.Snapshot()
 			snapshot.OrderOffset = orderOffset
+			snapshot.OrderBookSnapshot.ProductId = e.productId
 			e.snapshotApproveReqCh <- snapshot
 		}
 	}
@@ -213,7 +232,6 @@ func (e *Engine) countDownTimer() {
 
 }
 func (o *offsetOrder) timed(e *Engine) {
-
 	flag := 0
 	elapse := time.Duration(1) * time.Second
 	expiresIn := o.Order.ExpiresIn
@@ -224,7 +242,8 @@ func (o *offsetOrder) timed(e *Engine) {
 			if expiresIn == 0 {
 				o.Order.Status = models.OrderStatusCancelling
 				o.Order.UpdatedAt = time.Now()
-				SubmitOrder(o.Order)
+				o.Order.ExpiresIn = 0
+				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
 				depth := e.OrderBook.depths[o.Order.Side]
