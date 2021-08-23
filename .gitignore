@@ -29,7 +29,6 @@ data/*
 .idea
 .idea/*
 docker\
-conf.json
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json

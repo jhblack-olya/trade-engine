@@ -89,12 +89,12 @@ func newBookOrder(order *models.Order) *BookOrder {
 }
 
 func (d *depth) add(order BookOrder) {
-	if _, ok := d.orders[order.OrderId]; !ok {
-		d.orders[order.OrderId] = &order
-		d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
-	}
+	//if _, ok := d.orders[order.OrderId]; !ok {
 	//	d.orders[order.OrderId] = &order
 	//	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
+	//}
+	d.orders[order.OrderId] = &order
+	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
 }
 
 func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
