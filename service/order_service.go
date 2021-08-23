@@ -12,7 +12,7 @@ import (
 )
 
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
-	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string) (*models.Order, error) {
+	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string, stopPrice decimal.Decimal) (*models.Order, error) {
 	product, err := GetProductById(productId)
 	if err != nil {
 		return nil, err
@@ -48,6 +48,8 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 			price = decimal.Zero
 			funds = decimal.Zero
 		}
+	} else if orderType == models.OrderTypeStopLoss {
+		//for stoploss
 	} else {
 		return nil, errors.New("unknown order type")
 	}
@@ -73,6 +75,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		ExpiresIn:      expiresIn,
 		TimeInForce:    utils.I64ToA(expiresIn),
 		BackendOrderId: backendOrderId,
+		StopPrice:      stopPrice,
 	}
 
 	db, err := mysql.SharedStore().BeginTx()
