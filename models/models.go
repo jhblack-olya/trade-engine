@@ -143,23 +143,46 @@ type Product struct {
 }
 
 type Order struct {
-	Id            int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	ProductId     string
-	UserId        int64
-	ClientOid     string
-	Size          decimal.Decimal `sql:"type:decimal(32,16);"`
-	Funds         decimal.Decimal `sql:"type:decimal(32,16);"`
-	FilledSize    decimal.Decimal `sql:"type:decimal(32,16);"`
-	ExecutedValue decimal.Decimal `sql:"type:decimal(32,16);"`
-	Price         decimal.Decimal `sql:"type:decimal(32,16);"`
-	FillFees      decimal.Decimal `sql:"type:decimal(32,16);"`
-	Type          OrderType
-	Side          Side
-	TimeInForce   string
-	Status        OrderStatus
-	Settled       bool
+	Id             int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	ProductId      string
+	UserId         int64
+	ClientOid      string
+	Size           decimal.Decimal `sql:"type:decimal(32,16);"`
+	Funds          decimal.Decimal `sql:"type:decimal(32,16);"`
+	FilledSize     decimal.Decimal `sql:"type:decimal(32,16);"`
+	ExecutedValue  decimal.Decimal `sql:"type:decimal(32,16);"`
+	Price          decimal.Decimal `sql:"type:decimal(32,16);"`
+	FillFees       decimal.Decimal `sql:"type:decimal(32,16);"`
+	Type           OrderType
+	Side           Side
+	TimeInForce    string
+	Status         OrderStatus
+	Settled        bool
+	ExpiresIn      int64
+	BackendOrderId string
+}
+type GFill struct {
+	Id         int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	TradeId    int64
+	OrderId    int64 `gorm:"unique_index:o_m"`
+	MessageSeq int64 `gorm:"unique_index:o_m"`
+	ProductId  string
+	Size       decimal.Decimal `sql:"type:decimal(32,16);"`
+	Price      decimal.Decimal `sql:"type:decimal(32,16);"`
+	Funds      decimal.Decimal `sql:"type:decimal(32,16);"`
+	Fee        decimal.Decimal `sql:"type:decimal(32,16);"`
+	Liquidity  string
+	Settled    bool
+	Side       Side
+	Done       bool
+	DoneReason DoneReason
+	LogOffset  int64
+	LogSeq     int64
+	ClientOid  string
 }
 
 type Fill struct {
@@ -182,6 +205,7 @@ type Fill struct {
 	LogOffset  int64
 	LogSeq     int64
 	ClientOid  string
+	ExpiresIn  int64 `gorm:"-"`
 }
 
 type Trade struct {
@@ -197,22 +221,6 @@ type Trade struct {
 	Time         time.Time
 	LogOffset    int64
 	LogSeq       int64
-}
-
-type Tick struct {
-	Id          int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	ProductId   string          `gorm:"unique_index:p_g_t"`
-	Granularity int64           `gorm:"unique_index:p_g_t"`
-	Time        int64           `gorm:"unique_index:p_g_t"`
-	Open        decimal.Decimal `sql:"type:decimal(32,16);"`
-	High        decimal.Decimal `sql:"type:decimal(32,16);"`
-	Low         decimal.Decimal `sql:"type:decimal(32,16);"`
-	Close       decimal.Decimal `sql:"type:decimal(32,16);"`
-	Volume      decimal.Decimal `sql:"type:decimal(32,16);"`
-	LogOffset   int64
-	LogSeq      int64
 }
 
 type Config struct {
@@ -236,4 +244,24 @@ type Transaction struct {
 	ToAddress   string
 	Note        string
 	TxId        string
+}
+
+type Expiry struct {
+	OrderId   int64
+	Timer     int64
+	LogOffset int64
+}
+
+type PlaceOrderRequest struct {
+	ClientOid      string  `json:"client_oid"`
+	ProductId      string  `json:"productId"`
+	UserId         int64   `json:"userId"`
+	Size           float64 `json:"size"`
+	Funds          float64 `json:"funds"`
+	Price          float64 `json:"price"`
+	Side           string  `json:"side"`
+	Type           string  `json:"type"`        // [optional] limit or market (default is limit)
+	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
+	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
+	BackendOrderId string  `json:"backendOrderId"`
 }

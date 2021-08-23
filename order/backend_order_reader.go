@@ -1,4 +1,4 @@
-package matching
+package order
 
 import (
 	"context"
@@ -9,19 +9,19 @@ import (
 )
 
 const (
-	TopicOrderPrefix = "matching_order_"
+	TopicBackendOrderPrefix = "backend_order"
 )
 
 type KafkaOrderReader struct {
 	orderReader *kafka.Reader
 }
 
-func NewKafkaOrderReader(productId string, brokers []string) *KafkaOrderReader {
+func NewKafkaOrderReader(brokers []string) *KafkaOrderReader {
 	s := &KafkaOrderReader{}
 
 	s.orderReader = kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   brokers,
-		Topic:     TopicOrderPrefix + productId,
+		Topic:     TopicBackendOrderPrefix,
 		Partition: 0,
 		MinBytes:  1,
 		MaxBytes:  10e6,
@@ -33,7 +33,7 @@ func (s *KafkaOrderReader) SetOffset(offset int64) error {
 	return s.orderReader.SetOffset(offset)
 }
 
-func (s *KafkaOrderReader) FetchOrder() (offset int64, order *models.Order, err error) {
+func (s *KafkaOrderReader) FetchOrder() (offset int64, order *models.PlaceOrderRequest, err error) {
 	message, err := s.orderReader.FetchMessage(context.Background())
 	if err != nil {
 		return 0, nil, err
@@ -43,4 +43,9 @@ func (s *KafkaOrderReader) FetchOrder() (offset int64, order *models.Order, err 
 		return 0, nil, err
 	}
 	return message.Offset, order, nil
+}
+
+func (s *KafkaOrderReader) ReadLag() (int64, error) {
+	lag, err := s.orderReader.ReadLag(context.Background())
+	return lag, err
 }

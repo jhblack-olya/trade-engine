@@ -1,0 +1,169 @@
+#  we have to make some mysql config changes. so we r using a diffrend docker file for it
+#  [mysqld]
+#  server_id=1
+#  log_bin = /var/log/mysql/mysql-bin.log
+#   in file /etc/mysql/my.cnf file
+##########################################
+#  1. docker network create gax-dev-nw
+##########################################
+#  2. docker-compose down && docker-compose build --no-cache && docker-compose up
+##########################################
+# 3. create new kafka topic
+# docker exec -it <kafka> bash
+#     /opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_order_BTC-USDT --from-beginning
+#      /opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_message_BTC-USDT --from-beginning
+
+
+
+
+
+
+##########################################
+version: '3.3'
+services:
+  golang:
+    container_name: gax-dev-nw-golang
+    restart: always
+    # dns:
+    #   - 127.0.0.1
+    build: .
+    ports:
+      - 28851:8011
+    restart: always
+    depends_on:
+      - db
+    networks:
+      - gax-dev-nw
+    links:
+      - db
+##########################################
+  db:
+    container_name: gax-dev-mysql
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile-mysql
+    restart: always
+    networks:
+      - gax-dev-nw
+    environment:
+      MYSQL_DATABASE: 'tradeengine'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'rootroot'
+    volumes:
+      - ./docker_mysql_data:/var/lib/mysql
+##########################################
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    container_name: gax-dev-phpmyadmin
+    networks:
+      - gax-dev-nw
+    environment:
+      PMA_HOST: gax-dev-mysql
+    depends_on:
+      - db
+    ports:
+      - "29273:80"
+
+##########################################
+  redis:
+    container_name: gax-dev-redis
+    restart: always
+    networks:
+      - gax-dev-nw
+    image: redis
+    volumes:
+      - ./docker_data_redis:/data
+    entrypoint: redis-server --appendonly yes
+
+
+##########################################
+
+  zookeeper:
+    image: bitnami/zookeeper:3-debian-10
+    container_name: "gax-dev-zookeeper"
+    restart: always
+    networks:
+      - "gax-dev-nw"
+    # ports:
+    #   - 2181:2181
+    volumes:
+      - ./docker_zookeeper_data:/bitnami
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka:2-debian-10
+    container_name: "gax-dev-kafka"
+    restart: always
+    networks:
+      - "gax-dev-nw"
+    # ports:
+    #   - 9092:9092
+    volumes:
+      - ./docker_kafka_data:/bitnami
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: "gax-dev-kafka-gui"
+    restart: always
+    networks:
+      - "gax-dev-nw"
+    ports:
+      - 29271:9000
+    environment:
+      - KAFKA_BROKERCONNECT=kafka:9092
+      - JVM_OPTS=-Xms32M -Xmx64M
+    depends_on:
+      - kafka
+########################################## no need for the moment  (ver: b)
+#   # zookeeper:
+#   #   image: "bitnami/zookeeper:latest"
+#   #   container_name: "gax-dev-nw-zookeeper"
+#   #   restart: always
+#   #   networks:
+#   #     - "gax-dev-nw"
+#   #   ports:
+#   #     - "2181"
+#   #   environment:
+#   #     - ALLOW_ANONYMOUS_LOGIN=yes
+# ##########################################   (ver: b)
+  # kafka:
+  #   image: spotify/kafka
+  #   container_name: "gax-dev-kafka"
+  #   restart: always
+  #   networks:
+  #     - "gax-dev-nw"
+  #   # ports:
+  #   #   - '2181:2181'
+  #   #   - '9092:9092'
+  #   environment:
+  #     - ADVERTISED_HOST=kafka
+  #     - ADVERTISED_PORT=9092
+  #   # depends_on:
+  #   #   - zookeeper
+##########################################
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    container_name: "gax-dev-logs"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 29272:8080
+############################################
+networks:
+  gax-dev-nw:
+    external:
+      name: 'gax-dev-nw'
+
+# volumes:
+#   docker_data_redis:
+#   docker_mysql_data:

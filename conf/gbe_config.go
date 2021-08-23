@@ -49,8 +49,8 @@ var configOnce sync.Once
 
 func GetConfig() *GbeConfig {
 	configOnce.Do(func() {
-		gopath := os.Getenv("GOPATH")
-		bytes, err := ioutil.ReadFile(gopath + "/trade-engine/conf.json")
+		pwd, _ := os.Getwd()
+		bytes, err := ioutil.ReadFile(pwd + "/conf.json")
 		if err != nil {
 			panic(err)
 		}

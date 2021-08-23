@@ -66,7 +66,6 @@ func initDb() error {
 			&models.Fill{},
 			&models.User{},
 			&models.Bill{},
-			&models.Tick{},
 			&models.Config{},
 		}
 		for _, table := range tables {
