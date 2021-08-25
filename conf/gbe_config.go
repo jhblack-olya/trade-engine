@@ -2,9 +2,12 @@ package conf
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sync"
+
+	"flag"
 )
 
 type GbeConfig struct {
@@ -49,8 +52,20 @@ var configOnce sync.Once
 
 func GetConfig() *GbeConfig {
 	configOnce.Do(func() {
+
+		configFile := flag.String("config", "", "run with config file, refer to README.md file")
+		flag.Parse()
+		var fileName string
+		if configFile != nil {
+			fileName = *configFile
+		}
+		if flag.NFlag() != 1 {
+			fileName = "/conf.json"
+		}
+
 		pwd, _ := os.Getwd()
-		bytes, err := ioutil.ReadFile(pwd + "/conf.json")
+		fmt.Println("Loaded file: ", fileName)
+		bytes, err := ioutil.ReadFile(pwd + fileName)
 		if err != nil {
 			panic(err)
 		}
