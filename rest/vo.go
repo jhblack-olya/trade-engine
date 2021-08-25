@@ -22,4 +22,5 @@ type placeOrderRequest struct {
 	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
 	BackendOrderId string  `json:"backendOrderId"`
+	StopPrice      float64 `json:"stopPrice"` // [optional] set stopPrice only for stop-loss order
 }

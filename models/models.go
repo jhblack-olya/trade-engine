@@ -69,8 +69,9 @@ type DoneReason string
 type TransactionStatus string
 
 const (
-	OrderTypeLimit  = OrderType("limit")
-	OrderTypeMarket = OrderType("market")
+	OrderTypeLimit    = OrderType("limit")
+	OrderTypeMarket   = OrderType("market")
+	OrderTypeStopLoss = OrderType("stopLoss")
 
 	SideBuy  = Side("buy")
 	SideSell = Side("sell")
@@ -264,4 +265,5 @@ type PlaceOrderRequest struct {
 	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
 	BackendOrderId string  `json:"backendOrderId"`
+	StopPrice      float64 `json:"stopPrice"` // [optional] set stopPrice only for stop-loss order
 }
