@@ -101,9 +101,9 @@ func (e *Engine) runFetcher() {
 		}
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
-		} else if order.Type == models.OrderTypeLimit && order.ExpiresIn <= 0 {
-			order.Type = models.OrderTypeMarket // if limit order comes with expiry less than or equal to zero
-			// convert to market order
+		} else if order.Type == models.OrderTypeLimit && order.ExpiresIn <= 0 && order.ExpiresIn != -1 {
+			order.Status = models.OrderStatusCancelling // if limit order comes with expiry less than or equal to zero
+			// cancel order if expiry is -1 its admin limit order which will not cancel
 		}
 		if order.Type == models.OrderTypeMarket {
 			order.ExpiresIn = 0
