@@ -4,6 +4,6 @@ FROM mysql
 RUN echo "[mysqld]" >> /etc/mysql/my.cnf
 RUN echo "server_id=1" >> /etc/mysql/my.cnf
 RUN echo "log_bin" >> /etc/mysql/my.cnf
-ADD ddl.sql /docker-entrypoint-initdb.d
+# ADD ddl.sql /docker-entrypoint-initdb.d   <<<< no need once devlopers have phpmyadmin
 
 # EXPOSE 3306

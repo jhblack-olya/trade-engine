@@ -54,6 +54,20 @@ services:
     volumes:
       - ./docker_mysql_data:/var/lib/mysql
 ##########################################
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    container_name: gax-dev-phpmyadmin
+    networks:
+      - gax-dev-nw
+    environment:
+      PMA_HOST: gax-dev-mysql
+    depends_on:
+      - db
+    ports:
+      - "29273:80"
+
+##########################################
   redis:
     container_name: gax-dev-redis
     restart: always
@@ -63,39 +77,93 @@ services:
     volumes:
       - ./docker_data_redis:/data
     entrypoint: redis-server --appendonly yes
-########################################## no need for the moment
-  # zookeeper:
-  #   image: "bitnami/zookeeper:latest"
-  #   container_name: "gax-dev-nw-zookeeper"
-  #   restart: always
-  #   networks:
-  #     - "gax-dev-nw"
-  #   ports:
-  #     - "2181"
-  #   environment:
-  #     - ALLOW_ANONYMOUS_LOGIN=yes
+
+
 ##########################################
+
+  zookeeper:
+    image: bitnami/zookeeper:3-debian-10
+    container_name: "gax-dev-zookeeper"
+    restart: always
+    networks:
+      - "gax-dev-nw"
+    # ports:
+    #   - 2181:2181
+    volumes:
+      - ./docker_zookeeper_data:/bitnami
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
   kafka:
-    image: spotify/kafka
+    image: bitnami/kafka:2-debian-10
     container_name: "gax-dev-kafka"
     restart: always
     networks:
       - "gax-dev-nw"
     # ports:
-    #   - '2181:2181'
-    #   - '9092:9092'
+    #   - 9092:9092
+    volumes:
+      - ./docker_kafka_data:/bitnami
     environment:
-      - ADVERTISED_HOST=kafka
-      - ADVERTISED_PORT=9092
-    # depends_on:
-    #   - zookeeper
-##########################################
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
 
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: "gax-dev-kafka-gui"
+    restart: always
+    networks:
+      - "gax-dev-nw"
+    ports:
+      - 29271:9000
+    environment:
+      - KAFKA_BROKERCONNECT=kafka:9092
+      - JVM_OPTS=-Xms32M -Xmx64M
+    depends_on:
+      - kafka
+########################################## no need for the moment  (ver: b)
+#   # zookeeper:
+#   #   image: "bitnami/zookeeper:latest"
+#   #   container_name: "gax-dev-nw-zookeeper"
+#   #   restart: always
+#   #   networks:
+#   #     - "gax-dev-nw"
+#   #   ports:
+#   #     - "2181"
+#   #   environment:
+#   #     - ALLOW_ANONYMOUS_LOGIN=yes
+# ##########################################   (ver: b)
+  # kafka:
+  #   image: spotify/kafka
+  #   container_name: "gax-dev-kafka"
+  #   restart: always
+  #   networks:
+  #     - "gax-dev-nw"
+  #   # ports:
+  #   #   - '2181:2181'
+  #   #   - '9092:9092'
+  #   environment:
+  #     - ADVERTISED_HOST=kafka
+  #     - ADVERTISED_PORT=9092
+  #   # depends_on:
+  #   #   - zookeeper
+##########################################
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    container_name: "gax-dev-logs"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 29272:8080
+############################################
 networks:
   gax-dev-nw:
     external:
       name: 'gax-dev-nw'
 
-volumes:
-  docker_data_redis:
-  docker_mysql_data:
+# volumes:
+#   docker_data_redis:
+#   docker_mysql_data:
