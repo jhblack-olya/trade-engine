@@ -9,7 +9,7 @@
 *.iml
 *.xml
 *。sum
-*.json
+local-conf.json
 # Test binary, built with `go test -c`
 *.test
 
