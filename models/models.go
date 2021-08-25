@@ -163,7 +163,6 @@ type Order struct {
 	Settled        bool
 	ExpiresIn      int64
 	BackendOrderId string
-	StopPrice      decimal.Decimal
 }
 type GFill struct {
 	Id         int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
