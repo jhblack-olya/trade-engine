@@ -9,7 +9,7 @@
 *.iml
 *.xml
 *。sum
-
+local-conf.json
 # Test binary, built with `go test -c`
 *.test
 
@@ -29,10 +29,10 @@ data/*
 .idea
 .idea/*
 docker\
-conf.json
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 *.code-workspace
+local-conf.json

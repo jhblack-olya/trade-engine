@@ -56,14 +56,15 @@ type priceOrderIdKey struct {
 }
 
 type BookOrder struct {
-	OrderId   int64
-	Size      decimal.Decimal
-	Funds     decimal.Decimal
-	Price     decimal.Decimal
-	Side      models.Side
-	Type      models.OrderType
-	ClientOid string
-	ExpiresIn int64
+	OrderId        int64
+	Size           decimal.Decimal
+	Funds          decimal.Decimal
+	Price          decimal.Decimal
+	Side           models.Side
+	Type           models.OrderType
+	ClientOid      string
+	ExpiresIn      int64
+	BackendOrderId string
 }
 
 func (o *orderBook) nextLogSeq() int64 {
@@ -77,24 +78,25 @@ func (o *orderBook) nextTradeSeq() int64 {
 }
 func newBookOrder(order *models.Order) *BookOrder {
 	return &BookOrder{
-		OrderId:   order.Id,
-		Size:      order.Size,
-		Funds:     order.Funds,
-		Price:     order.Price,
-		Side:      order.Side,
-		Type:      order.Type,
-		ClientOid: order.ClientOid,
-		ExpiresIn: order.ExpiresIn,
+		OrderId:        order.Id,
+		Size:           order.Size,
+		Funds:          order.Funds,
+		Price:          order.Price,
+		Side:           order.Side,
+		Type:           order.Type,
+		ClientOid:      order.ClientOid,
+		ExpiresIn:      order.ExpiresIn,
+		BackendOrderId: order.BackendOrderId,
 	}
 }
 
 func (d *depth) add(order BookOrder) {
-	if _, ok := d.orders[order.OrderId]; !ok {
-		d.orders[order.OrderId] = &order
-		d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
-	}
+	//if _, ok := d.orders[order.OrderId]; !ok {
 	//	d.orders[order.OrderId] = &order
 	//	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
+	//}
+	d.orders[order.OrderId] = &order
+	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
 }
 
 func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
