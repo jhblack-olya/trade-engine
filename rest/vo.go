@@ -1,5 +1,7 @@
 package rest
 
+import "github.com/shopspring/decimal"
+
 type messageVo struct {
 	Message string `json:"message"`
 }
@@ -22,4 +24,12 @@ type placeOrderRequest struct {
 	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
 	BackendOrderId string  `json:"backendOrderId"`
+}
+
+type accountRequest struct {
+	UserId                 int64           `json:"user_id"`
+	BaseCurrency           string          `json:"base_currency"`
+	BaseCurrencyAvailable  decimal.Decimal `json:"base_currency_available"`
+	QuoteCurrency          string          `json:"quote_currency"`
+	QuoteCurrencyAvailable decimal.Decimal `json:"quote_currency_available"`
 }
