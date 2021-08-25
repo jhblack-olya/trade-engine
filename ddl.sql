@@ -162,5 +162,3 @@ insert into `g_account`(`user_id`,`currency`,`hold`,`available`)values(1,`USDT`,
 
 ALTER TABLE `g_order` DROP COLUMN `backend_order_id`;
 ALTER TABLE `g_order` ADD `backend_order_id` varchar(255) DEFAULT NULL;
-
-ALTER TABLE `g_order` ADD `stop_price` decimal(32,16) NOT NULL DEFAULT '0.0000000000000000';
