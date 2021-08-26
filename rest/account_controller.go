@@ -35,7 +35,9 @@ func UpdateAccount(ctx *gin.Context) {
 	}
 	account, err := mysql.SharedStore().GetAccountForUpdate(req.UserId, req.Currency)
 	if account == nil {
-
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, "Fetch error for user_id in accounts Error: "+err.Error())
+		}
 		ctx.JSON(http.StatusNotFound, "Currency "+req.Currency+" in account not found for user_id "+fmt.Sprint(req.UserId))
 		return
 	}
