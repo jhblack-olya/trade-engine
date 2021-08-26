@@ -28,6 +28,7 @@ func (server *HttpServer) Start() {
 		private.POST("/api/orders", PlaceOder)
 		private.POST("/api/backendOrder", BackendOrder)
 		private.POST("/api/account/create", CreateAccount)
+		private.PATCH("/api/account/update", UpdateAccount)
 	}
 
 	err := r.Run(server.addr)
