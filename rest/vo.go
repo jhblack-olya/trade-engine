@@ -33,3 +33,9 @@ type accountRequest struct {
 	QuoteCurrency          string          `json:"quote_currency"`
 	QuoteCurrencyAvailable decimal.Decimal `json:"quote_currency_available"`
 }
+
+type accountUpdateRequest struct {
+	UserId   int64           `json:"user_id"`
+	Currency string          `json:"currency"`
+	Amount   decimal.Decimal `json:"amount"`
+}
