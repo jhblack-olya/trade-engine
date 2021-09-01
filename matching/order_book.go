@@ -31,6 +31,7 @@ type orderBook struct {
 	// a sliding window de duplication strategy is adopted.
 	orderIdWindow  Window
 	DanglingOrders []*models.Order
+	ArtTraded      map[string]decimal.Decimal
 }
 
 type orderBookSnapshot struct {
@@ -65,6 +66,7 @@ type BookOrder struct {
 	ClientOid      string
 	ExpiresIn      int64
 	BackendOrderId string
+	Art            string
 }
 
 func (o *orderBook) nextLogSeq() int64 {
@@ -87,6 +89,7 @@ func newBookOrder(order *models.Order) *BookOrder {
 		ClientOid:      order.ClientOid,
 		ExpiresIn:      order.ExpiresIn,
 		BackendOrderId: order.BackendOrderId,
+		Art:            order.Art,
 	}
 }
 
@@ -154,6 +157,9 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		//maker who have already placed order normally not an immediate buyer or seller
 		//ex trader who place limit order
 		makerOrder := makerDepth.orders[itr.Value().(int64)]
+		if makerOrder.Art != takerOrder.Art {
+			continue
+		}
 		//check if buying price is greater than or equal to ask price
 		//or
 		//check if selling price is lesser than or equal to bid price
@@ -215,13 +221,14 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		}
 
 		// matched,write a log
-		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size, takerOrder.ExpiresIn, makerOrder.ExpiresIn)
+		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size, takerOrder.ExpiresIn, makerOrder.ExpiresIn, takerOrder.Art, makerOrder.Art)
 		logs = append(logs, matchLog)
-		fmt.Println("Last traded price ", price)
+		o.ArtTraded[makerOrder.Art] = price
+		fmt.Println("Last traded price ", o.ArtTraded)
 		// maker is filled
 		if makerOrder.Size.IsZero() {
 
-			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn)
+			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn, makerOrder.Art)
 			logs = append(logs, doneLog)
 		}
 	}
@@ -233,7 +240,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		//there was only partial order cross.
 		//so it will be added to order book and set next log sequence in order to execute this order in future
 		o.depths[takerOrder.Side].add(*takerOrder)
-		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder, takerOrder.ExpiresIn)
+		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder, takerOrder.ExpiresIn, takerOrder.Art)
 		logs = append(logs, openLog)
 	} else {
 		//if marketorder and order dint execute cancel order
@@ -251,7 +258,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 				reason = models.DoneReasonCancelled
 			}
 		}
-		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason, takerOrder.ExpiresIn)
+		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason, takerOrder.ExpiresIn, takerOrder.Art)
 		logs = append(logs, doneLog)
 	}
 	return logs
@@ -272,7 +279,7 @@ func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 		panic(err)
 	}
 
-	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn)
+	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn, order.Art)
 	return append(logs, doneLog)
 }
 
@@ -375,6 +382,7 @@ func NewOrderBook(product *models.Product) *orderBook {
 		product:       product,
 		depths:        map[models.Side]*depth{models.SideBuy: bids, models.SideSell: asks},
 		orderIdWindow: newWindow(0, orderIdWindowCap),
+		ArtTraded:     make(map[string]decimal.Decimal),
 	}
 	return orderBook
 }

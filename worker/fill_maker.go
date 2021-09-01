@@ -58,6 +58,7 @@ func (t *FillMaker) OnMatchLog(log *matching.MatchLog, offset int64) {
 		LogOffset:  offset,
 		LogSeq:     log.Sequence,
 		ExpiresIn:  log.TakerExpiresIn,
+		Art:        log.TakerArt,
 	}
 	t.fillCh <- &models.Fill{
 		TradeId:    log.TradeId,
@@ -71,6 +72,7 @@ func (t *FillMaker) OnMatchLog(log *matching.MatchLog, offset int64) {
 		LogOffset:  offset,
 		LogSeq:     log.Sequence,
 		ExpiresIn:  log.MakerExpiresIn,
+		Art:        log.MakerArt,
 	}
 }
 
@@ -85,6 +87,7 @@ func (t *FillMaker) OnDoneLog(log *matching.DoneLog, offset int64) {
 		LogOffset:  offset,
 		LogSeq:     log.Sequence,
 		ExpiresIn:  log.ExpiresIn,
+		Art:        log.Art,
 	}
 }
 

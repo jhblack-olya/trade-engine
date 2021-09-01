@@ -85,7 +85,7 @@ func (b *BackendOrder) PlaceOrder(req *models.PlaceOrderRequest) {
 	funds := decimal.NewFromFloat(req.Funds)
 
 	order, err := service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-		side, size, price, funds, req.ExpiresIn, req.BackendOrderId)
+		side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art)
 
 	if err != nil {
 		return

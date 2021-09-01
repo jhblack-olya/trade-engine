@@ -24,6 +24,7 @@ type placeOrderRequest struct {
 	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
 	BackendOrderId string  `json:"backendOrderId"`
+	Art            string  `json:"art_name"`
 }
 
 type accountRequest struct {

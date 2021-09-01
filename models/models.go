@@ -162,6 +162,7 @@ type Order struct {
 	Settled        bool
 	ExpiresIn      int64
 	BackendOrderId string
+	Art            string
 }
 type GFill struct {
 	Id         int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
@@ -182,7 +183,9 @@ type GFill struct {
 	DoneReason DoneReason
 	LogOffset  int64
 	LogSeq     int64
-	ClientOid  string
+	//	ExpiresIn  int64 `gorm:"-"`
+	//	ClientOid  string
+	Art string
 }
 
 type Fill struct {
@@ -206,6 +209,7 @@ type Fill struct {
 	LogSeq     int64
 	ClientOid  string
 	ExpiresIn  int64 `gorm:"-"`
+	Art        string
 }
 
 type Trade struct {
@@ -221,6 +225,8 @@ type Trade struct {
 	Time         time.Time
 	LogOffset    int64
 	LogSeq       int64
+	TakerArt     string
+	MakerArt     string
 }
 
 type Config struct {
@@ -264,4 +270,5 @@ type PlaceOrderRequest struct {
 	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
 	BackendOrderId string  `json:"backendOrderId"`
+	Art            string  `json:"art_name"`
 }
