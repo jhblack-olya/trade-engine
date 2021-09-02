@@ -1,6 +1,7 @@
 package matching
 
 import (
+	"fmt"
 	"time"
 
 	logger "github.com/siddontang/go-log/log"
@@ -81,6 +82,7 @@ func (e *Engine) runFetcher() {
 		logger.Fatalf("set order reader offset error: %v", err)
 	}
 
+	fmt.Printf("Initial Values in art depth \n %+v \n", e.OrderBook.artDepths)
 	//Sending snapshot orders to timed and applier before new order comes in
 	if len(e.OrderBook.DanglingOrders) > 0 {
 		for _, dOrder := range e.OrderBook.DanglingOrders {
@@ -99,7 +101,10 @@ func (e *Engine) runFetcher() {
 			logger.Error(err)
 			continue
 		}
-
+		if _, ok := e.OrderBook.artDepths[order.Art]; !ok {
+			e.OrderBook.artDepths[order.Art] = e.OrderBook.NewArtDepth(order.Art)
+			fmt.Println("Orders in order book ", e.OrderBook.artDepths)
+		}
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
 		} else if order.Type == models.OrderTypeLimit && order.ExpiresIn <= 0 && order.ExpiresIn != -1 {
@@ -133,7 +138,7 @@ func (e *Engine) runApplier() {
 
 		case snapshot := <-e.snapshotReqCh:
 			delta := orderOffset - snapshot.OrderOffset
-			if delta <= 1000 {
+			if delta <= 2 {
 				continue
 			}
 			logger.Infof("should take snapshot: %v %v-[%v]-%v->",
@@ -227,12 +232,16 @@ func (e *Engine) countDownTimer() {
 	for {
 		select {
 		case o := <-e.expiryCh:
-			go o.timed(e)
+			//extract order and method with time
+			depth := e.OrderBook.artDepths[o.Order.Art][o.Order.Side]
+			go depth.timed(o, e)
 		}
 	}
 
 }
-func (o *offsetOrder) timed(e *Engine) {
+
+//use depth
+func (d *depth) timed(o *offsetOrder, e *Engine) {
 	flag := 0
 	elapse := time.Duration(1) * time.Second
 	expiresIn := o.Order.ExpiresIn
@@ -247,8 +256,11 @@ func (o *offsetOrder) timed(e *Engine) {
 				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
-				depth := e.OrderBook.depths[o.Order.Side]
-				status := depth.UpdateDepth(o.Order.Id, expiresIn)
+				//depth :=
+				//				fmt.Println("Order ", o.Order.Id, " of Art ", o.Order.Art, " expires in ", expiresIn, " sec")
+
+				status := d.UpdateDepth(o.Order.Id, expiresIn)
+
 				// if status false order not present in order book it may have completed or got cancelled prior
 				if !status {
 					flag = 1
