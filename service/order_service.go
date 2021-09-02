@@ -12,7 +12,7 @@ import (
 )
 
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
-	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string) (*models.Order, error) {
+	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string, art string) (*models.Order, error) {
 	product, err := GetProductById(productId)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	if side == models.SideBuy {
 		holdCurrency, holdSize = product.QuoteCurrency, funds
 	} else {
-		holdCurrency, holdSize = product.BaseCurrency, size
+		holdCurrency, holdSize = art+"_"+product.BaseCurrency, size
 	}
 
 	order := &models.Order{
@@ -73,6 +73,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		ExpiresIn:      expiresIn,
 		TimeInForce:    utils.I64ToA(expiresIn),
 		BackendOrderId: backendOrderId,
+		Art:            art,
 	}
 
 	db, err := mysql.SharedStore().BeginTx()
@@ -98,7 +99,7 @@ func GetOrderById(orderId int64) (*models.Order, error) {
 	return mysql.SharedStore().GetOrderById(orderId)
 }
 
-func ExecuteFill(orderId, timer int64) error {
+func ExecuteFill(orderId, timer int64, art string) error {
 	db, err := mysql.SharedStore().BeginTx()
 	if err != nil {
 		return err
@@ -133,6 +134,7 @@ func ExecuteFill(orderId, timer int64) error {
 
 	var bills []*models.Bill
 	for _, fill := range fills {
+		fmt.Println("art recieved from table g_fill ", fill.Art)
 		fill.Settled = true
 		notes := fmt.Sprintf("%v-%v", fill.OrderId, fill.Id)
 
@@ -142,7 +144,7 @@ func ExecuteFill(orderId, timer int64) error {
 			order.FilledSize = order.FilledSize.Add(fill.Size)
 			if order.Side == models.SideBuy {
 				// Buy order, incr base
-				bill, err := AddDelayBill(db, order.UserId, product.BaseCurrency, fill.Size, decimal.Zero,
+				bill, err := AddDelayBill(db, order.UserId, art+"_"+product.BaseCurrency, fill.Size, decimal.Zero,
 					models.BillTypeTrade, notes)
 				if err != nil {
 					return err
@@ -159,7 +161,7 @@ func ExecuteFill(orderId, timer int64) error {
 
 			} else {
 				// decr base
-				bill, err := AddDelayBill(db, order.UserId, product.BaseCurrency, decimal.Zero, fill.Size.Neg(),
+				bill, err := AddDelayBill(db, order.UserId, art+"_"+product.BaseCurrency, decimal.Zero, fill.Size.Neg(),
 					models.BillTypeTrade, notes)
 				if err != nil {
 					return err
@@ -200,7 +202,7 @@ func ExecuteFill(orderId, timer int64) error {
 				// If it is a sell order, thaw the remaining size
 				remainingSize := order.Size.Sub(order.FilledSize)
 				if remainingSize.GreaterThan(decimal.Zero) {
-					bill, err := AddDelayBill(db, order.UserId, product.BaseCurrency, remainingSize, remainingSize.Neg(),
+					bill, err := AddDelayBill(db, order.UserId, art+"_"+product.BaseCurrency, remainingSize, remainingSize.Neg(),
 						models.BillTypeTrade, notes)
 					if err != nil {
 						return err

@@ -107,15 +107,13 @@ func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest inte
 	v := reflect.ValueOf(dest).Elem()
 	t := v.Type()
 	num := v.NumField()
-	if e.Table.Name == "g_fill" {
-		num -= 1
-	}
 	for i := 0; i < num; i++ {
 		f := v.Field(i)
 
 		colIdx := s.getColumnIndexByName(e, utils.SnakeCase(t.Field(i).Name))
-		//	fmt.Println("row[colIdx]", t.Field(i).Name, colIdx, row[colIdx])
-		//	fmt.Println("row", row)
+		if e.Table.Name == "g_fill" && (t.Field(i).Name == "ExpiresIn" || t.Field(i).Name == "ClientOid") {
+			continue
+		}
 		rowVal := row[colIdx]
 
 		switch f.Type().Name() {
