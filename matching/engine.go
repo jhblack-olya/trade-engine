@@ -99,6 +99,7 @@ func (e *Engine) runFetcher() {
 			logger.Error(err)
 			continue
 		}
+
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
 		} else if order.Type == models.OrderTypeLimit && order.ExpiresIn <= 0 && order.ExpiresIn != -1 {
