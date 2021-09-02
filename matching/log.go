@@ -34,6 +34,7 @@ type OpenLog struct {
 	Side           models.Side
 	ExpiresIn      int64
 	BackendOrderId string
+	Art            string
 }
 
 type DoneLog struct {
@@ -45,6 +46,7 @@ type DoneLog struct {
 	Side           models.Side
 	ExpiresIn      int64
 	BackendOrderId string
+	Art            string
 }
 
 type MatchLog struct {
@@ -61,9 +63,11 @@ type MatchLog struct {
 	MakerExpiresIn      int64
 	TakerBackendOrderId string
 	MakerBackendOrderId string
+	TakerArt            string
+	MakerArt            string
 }
 
-func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64) *MatchLog {
+func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64, takerArt, makerArt string) *MatchLog {
 	return &MatchLog{
 		Base:                Base{LogTypeMatch, logSeq, productId, time.Now()},
 		TradeId:             tradeSeq,
@@ -78,9 +82,11 @@ func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, mak
 		MakerExpiresIn:      makerTimer,
 		TakerBackendOrderId: takerOrder.BackendOrderId,
 		MakerBackendOrderId: makerOrder.BackendOrderId,
+		TakerArt:            takerArt,
+		MakerArt:            makerArt,
 	}
 }
-func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64) *OpenLog {
+func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64, art string) *OpenLog {
 	return &OpenLog{
 		Base:           Base{LogTypeOpen, logSeq, productId, time.Now()},
 		OrderId:        takerOrder.OrderId,
@@ -89,10 +95,11 @@ func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int
 		Side:           takerOrder.Side,
 		ExpiresIn:      timer,
 		BackendOrderId: takerOrder.BackendOrderId,
+		Art:            art,
 	}
 }
 
-func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64) *DoneLog {
+func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, art string) *DoneLog {
 	return &DoneLog{
 		Base:           Base{LogTypeDone, logSeq, productId, time.Now()},
 		OrderId:        order.OrderId,
@@ -102,6 +109,7 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 		Side:           order.Side,
 		ExpiresIn:      timer,
 		BackendOrderId: order.BackendOrderId,
+		Art:            art,
 	}
 }
 
