@@ -313,7 +313,6 @@ func (o *orderBook) Snapshot() orderBookSnapshot {
 		TradeSeq:      o.tradeSeq,
 		OrderIdWindow: o.orderIdWindow,
 	}
-
 	i := 0
 	for _, order := range sellBookOrder {
 		snapshot.Orders[i] = *order
@@ -335,10 +334,22 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 		o.orderIdWindow = newWindow(0, orderIdWindowCap)
 	}
 	//creating object for snapshot orders during restoration
-
 	for _, order := range snapshot.Orders {
 		if _, ok := o.artDepths[order.Art]; !ok {
 			o.artDepths[order.Art] = o.NewArtDepth(order.Art)
+			o.artDepths[order.Art][order.Side].add(order)
+			danglingOrder := &models.Order{
+				Id:        order.OrderId,
+				ExpiresIn: order.ExpiresIn,
+				Side:      order.Side,
+				Size:      order.Size,
+				Status:    models.OrderStatusOpen,
+				Funds:     order.Funds,
+				Type:      order.Type,
+				ProductId: snapshot.ProductId,
+				Art:       order.Art,
+			}
+			o.DanglingOrders = append(o.DanglingOrders, danglingOrder)
 		} else {
 			o.artDepths[order.Art][order.Side].add(order)
 			danglingOrder := &models.Order{
