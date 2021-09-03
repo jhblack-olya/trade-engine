@@ -1,14 +1,11 @@
 package matching
 
 import (
-	"fmt"
 	"time"
 
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/models"
 )
-
-//var danglingExpiryOrderMap map[int64]*models.Order
 
 type Engine struct {
 	productId            string
@@ -82,7 +79,6 @@ func (e *Engine) runFetcher() {
 		logger.Fatalf("set order reader offset error: %v", err)
 	}
 
-	fmt.Printf("Initial Values in art depth \n %+v \n", e.OrderBook.artDepths)
 	//Sending snapshot orders to timed and applier before new order comes in
 	if len(e.OrderBook.DanglingOrders) > 0 {
 		for _, dOrder := range e.OrderBook.DanglingOrders {
@@ -103,7 +99,6 @@ func (e *Engine) runFetcher() {
 		}
 		if _, ok := e.OrderBook.artDepths[order.Art]; !ok {
 			e.OrderBook.artDepths[order.Art] = e.OrderBook.NewArtDepth(order.Art)
-			fmt.Println("Orders in order book ", e.OrderBook.artDepths)
 		}
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
@@ -256,11 +251,7 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
-				//depth :=
-				//				fmt.Println("Order ", o.Order.Id, " of Art ", o.Order.Art, " expires in ", expiresIn, " sec")
-
 				status := d.UpdateDepth(o.Order.Id, expiresIn)
-
 				// if status false order not present in order book it may have completed or got cancelled prior
 				if !status {
 					flag = 1

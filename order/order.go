@@ -27,7 +27,6 @@ func ProcessOrder() {
 	if readLag > 0 {
 		readLag = readLag - 1
 	}
-	fmt.Println("readLag--------------------------", readLag)
 	if err != nil {
 		logger.Fatalf("set read lag  error: %v", err)
 	}
@@ -41,7 +40,6 @@ func (b *BackendOrder) Start() {
 
 func (b *BackendOrder) runFetcher() {
 	var offset = b.orderOffset
-	fmt.Println("b.orderOffset :: ", b.orderOffset)
 	if offset > 0 {
 		offset += 1
 	}
