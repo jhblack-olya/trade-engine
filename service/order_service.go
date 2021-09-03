@@ -134,7 +134,6 @@ func ExecuteFill(orderId, timer int64, art string) error {
 
 	var bills []*models.Bill
 	for _, fill := range fills {
-		fmt.Println("art recieved from table g_fill ", fill.Art)
 		fill.Settled = true
 		notes := fmt.Sprintf("%v-%v", fill.OrderId, fill.Id)
 

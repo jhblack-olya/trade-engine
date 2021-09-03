@@ -3,6 +3,7 @@ package matching
 import (
 	"fmt"
 	"math"
+	"sync"
 
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/shopspring/decimal"
@@ -32,6 +33,7 @@ type orderBook struct {
 	orderIdWindow  Window
 	DanglingOrders []*models.Order
 	ArtTraded      map[string]decimal.Decimal
+	artDepths      map[string]map[models.Side]*depth
 }
 
 type orderBookSnapshot struct {
@@ -94,10 +96,6 @@ func newBookOrder(order *models.Order) *BookOrder {
 }
 
 func (d *depth) add(order BookOrder) {
-	//if _, ok := d.orders[order.OrderId]; !ok {
-	//	d.orders[order.OrderId] = &order
-	//	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
-	//}
 	d.orders[order.OrderId] = &order
 	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
 }
@@ -149,17 +147,15 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			takerOrder.Price = decimal.Zero
 		}
 	}
-	//if taker are seller then makerDepth will be bids placed in order book and
-	//if taker are buyer then makerDepth will be asks placed in order book
-	makerDepth := o.depths[takerOrder.Side.Opposite()]
 
+	makerDepth := o.artDepths[takerOrder.Art][takerOrder.Side.Opposite()]
 	for itr := makerDepth.queue.Iterator(); itr.Next(); {
 		//maker who have already placed order normally not an immediate buyer or seller
 		//ex trader who place limit order
 		makerOrder := makerDepth.orders[itr.Value().(int64)]
-		if makerOrder.Art != takerOrder.Art {
-			continue
-		}
+		//if makerOrder.Art != takerOrder.Art {
+		//	continue
+		//}
 		//check if buying price is greater than or equal to ask price
 		//or
 		//check if selling price is lesser than or equal to bid price
@@ -232,14 +228,14 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			logs = append(logs, doneLog)
 		}
 	}
-
 	//If pogram controller break out of loop
 	//check if taker is of type limit and commodity to be trade is greater than 0
 	if takerOrder.Type == models.OrderTypeLimit && takerOrder.Size.GreaterThan(decimal.Zero) {
 		//It may be possible that there is no cross happened for entire order or
 		//there was only partial order cross.
 		//so it will be added to order book and set next log sequence in order to execute this order in future
-		o.depths[takerOrder.Side].add(*takerOrder)
+		//o.depths[takerOrder.Side].add(*takerOrder)
+		o.artDepths[takerOrder.Art][takerOrder.Side].add(*takerOrder)
 		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder, takerOrder.ExpiresIn, takerOrder.Art)
 		logs = append(logs, openLog)
 	} else {
@@ -267,14 +263,14 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 	_ = o.orderIdWindow.put(order.Id)
 
-	bookOrder, found := o.depths[order.Side].orders[order.Id]
+	bookOrder, found := o.artDepths[order.Art][order.Side].orders[order.Id]
 	if !found {
 		return logs
 	}
 
 	// Order the size of all decr, equal to the remove operation
 	remainingSize := bookOrder.Size
-	err := o.depths[order.Side].decrSize(order.Id, bookOrder.Size)
+	err := o.artDepths[order.Art][order.Side].decrSize(order.Id, bookOrder.Size)
 	if err != nil {
 		panic(err)
 	}
@@ -284,20 +280,46 @@ func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 }
 
 func (o *orderBook) Snapshot() orderBookSnapshot {
+	lengthSell := 0
+	lengthBuy := 0
+	var sellOrderDepth map[int64]*BookOrder
+	var buyOrderDepth map[int64]*BookOrder
+	var sellBookOrder, buyBookOrder []*BookOrder
+	var wg sync.WaitGroup
+	for _, val := range o.artDepths {
+		lengthSell += len(val[models.SideSell].orders)
+		lengthBuy += len(val[models.SideBuy].orders)
+		sellOrderDepth = val[models.SideSell].orders
+		buyOrderDepth = val[models.SideBuy].orders
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			for _, order := range sellOrderDepth {
+				sellBookOrder = append(sellBookOrder, order)
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			for _, order := range buyOrderDepth {
+				buyBookOrder = append(buyBookOrder, order)
+			}
+		}()
+		wg.Wait()
+
+	}
 	snapshot := orderBookSnapshot{
-		Orders:        make([]BookOrder, len(o.depths[models.SideSell].orders)+len(o.depths[models.SideBuy].orders)),
+		Orders:        make([]BookOrder, lengthSell+lengthBuy),
 		LogSeq:        o.logSeq,
 		TradeSeq:      o.tradeSeq,
 		OrderIdWindow: o.orderIdWindow,
 	}
-
 	i := 0
-	for _, order := range o.depths[models.SideSell].orders {
+	for _, order := range sellBookOrder {
 		snapshot.Orders[i] = *order
 		i++
 	}
 
-	for _, order := range o.depths[models.SideBuy].orders {
+	for _, order := range buyBookOrder {
 		snapshot.Orders[i] = *order
 		i++
 	}
@@ -313,19 +335,37 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 	}
 	//creating object for snapshot orders during restoration
 	for _, order := range snapshot.Orders {
-		fmt.Println("Orders getting restored ", order.OrderId)
-		o.depths[order.Side].add(order)
-		danglingOrder := &models.Order{
-			Id:        order.OrderId,
-			ExpiresIn: order.ExpiresIn,
-			Side:      order.Side,
-			Size:      order.Size,
-			Status:    models.OrderStatusOpen,
-			Funds:     order.Funds,
-			Type:      order.Type,
-			ProductId: snapshot.ProductId,
+		if _, ok := o.artDepths[order.Art]; !ok {
+			o.artDepths[order.Art] = o.NewArtDepth(order.Art)
+			o.artDepths[order.Art][order.Side].add(order)
+			danglingOrder := &models.Order{
+				Id:        order.OrderId,
+				ExpiresIn: order.ExpiresIn,
+				Side:      order.Side,
+				Size:      order.Size,
+				Status:    models.OrderStatusOpen,
+				Funds:     order.Funds,
+				Type:      order.Type,
+				ProductId: snapshot.ProductId,
+				Art:       order.Art,
+			}
+			o.DanglingOrders = append(o.DanglingOrders, danglingOrder)
+		} else {
+			o.artDepths[order.Art][order.Side].add(order)
+			danglingOrder := &models.Order{
+				Id:        order.OrderId,
+				ExpiresIn: order.ExpiresIn,
+				Side:      order.Side,
+				Size:      order.Size,
+				Status:    models.OrderStatusOpen,
+				Funds:     order.Funds,
+				Type:      order.Type,
+				ProductId: snapshot.ProductId,
+				Art:       order.Art,
+			}
+			o.DanglingOrders = append(o.DanglingOrders, danglingOrder)
 		}
-		o.DanglingOrders = append(o.DanglingOrders, danglingOrder)
+
 	}
 }
 
@@ -368,6 +408,16 @@ func priceOrderIdKeyDescComparator(a, b interface{}) int {
 }
 
 func NewOrderBook(product *models.Product) *orderBook {
+	orderBook := &orderBook{
+		product:       product,
+		orderIdWindow: newWindow(0, orderIdWindowCap),
+		ArtTraded:     make(map[string]decimal.Decimal),
+		artDepths:     make(map[string]map[models.Side]*depth),
+	}
+	return orderBook
+}
+
+func (o *orderBook) NewArtDepth(art string) map[models.Side]*depth {
 	asks := &depth{
 		queue:  treemap.NewWith(priceOrderIdKeyAscComparator),
 		orders: map[int64]*BookOrder{},
@@ -377,12 +427,6 @@ func NewOrderBook(product *models.Product) *orderBook {
 		queue:  treemap.NewWith(priceOrderIdKeyDescComparator),
 		orders: map[int64]*BookOrder{},
 	}
-
-	orderBook := &orderBook{
-		product:       product,
-		depths:        map[models.Side]*depth{models.SideBuy: bids, models.SideSell: asks},
-		orderIdWindow: newWindow(0, orderIdWindowCap),
-		ArtTraded:     make(map[string]decimal.Decimal),
-	}
-	return orderBook
+	depths := map[models.Side]*depth{models.SideBuy: bids, models.SideSell: asks}
+	return depths
 }

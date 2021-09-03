@@ -1,13 +1,12 @@
 package matching
 
 import (
+	"fmt"
 	"time"
 
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/models"
 )
-
-//var danglingExpiryOrderMap map[int64]*models.Order
 
 type Engine struct {
 	productId            string
@@ -98,6 +97,9 @@ func (e *Engine) runFetcher() {
 		if err != nil {
 			logger.Error(err)
 			continue
+		}
+		if _, ok := e.OrderBook.artDepths[order.Art]; !ok {
+			e.OrderBook.artDepths[order.Art] = e.OrderBook.NewArtDepth(order.Art)
 		}
 		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
@@ -226,12 +228,16 @@ func (e *Engine) countDownTimer() {
 	for {
 		select {
 		case o := <-e.expiryCh:
-			go o.timed(e)
+			//extract order and method with time
+			depth := e.OrderBook.artDepths[o.Order.Art][o.Order.Side]
+			go depth.timed(o, e)
 		}
 	}
 
 }
-func (o *offsetOrder) timed(e *Engine) {
+
+//use depth
+func (d *depth) timed(o *offsetOrder, e *Engine) {
 	flag := 0
 	elapse := time.Duration(1) * time.Second
 	expiresIn := o.Order.ExpiresIn
@@ -246,8 +252,8 @@ func (o *offsetOrder) timed(e *Engine) {
 				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
-				depth := e.OrderBook.depths[o.Order.Side]
-				status := depth.UpdateDepth(o.Order.Id, expiresIn)
+				fmt.Println("Order id ", o.Order.Id, "expires in ", expiresIn)
+				status := d.UpdateDepth(o.Order.Id, expiresIn)
 				// if status false order not present in order book it may have completed or got cancelled prior
 				if !status {
 					flag = 1
