@@ -1,7 +1,6 @@
 package matching
 
 import (
-	"fmt"
 	"time"
 
 	logger "github.com/siddontang/go-log/log"
@@ -252,7 +251,6 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
-				fmt.Println("Order id ", o.Order.Id, "expires in ", expiresIn)
 				status := d.UpdateDepth(o.Order.Id, expiresIn)
 				// if status false order not present in order book it may have completed or got cancelled prior
 				if !status {
