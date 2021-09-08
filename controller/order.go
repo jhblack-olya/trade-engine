@@ -1,8 +1,12 @@
-package order
+/*
+Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+You may not use, distribute and modify this code without a license;
+To obtain a license write to legal@gax.llc
+*/
+
+package controller
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	logger "github.com/siddontang/go-log/log"
@@ -49,8 +53,7 @@ func (b *BackendOrder) runFetcher() {
 	}
 
 	for {
-		offset, order, err := b.orderReader.FetchOrder()
-		fmt.Println("offset, order ->", offset, order.BackendOrderId, err)
+		_, order, err := b.orderReader.FetchOrder()
 		if err != nil {
 			continue
 		}

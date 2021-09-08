@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+You may not use, distribute and modify this code without a license;
+To obtain a license write to legal@gax.llc
+*/
+
 package service
 
 import (
@@ -11,6 +17,7 @@ import (
 	"gitlab.com/gae4/trade-engine/utils"
 )
 
+//PlaceOrder: adds order and bills to tables and pass order to matching engine
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
 	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string, art string) (*models.Order, error) {
 	product, err := GetProductById(productId)
@@ -99,6 +106,7 @@ func GetOrderById(orderId int64) (*models.Order, error) {
 	return mysql.SharedStore().GetOrderById(orderId)
 }
 
+//ExecuteFill: updates fill table and adds delay bills
 func ExecuteFill(orderId, timer int64, art string) error {
 	db, err := mysql.SharedStore().BeginTx()
 	if err != nil {

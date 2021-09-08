@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+You may not use, distribute and modify this code without a license;
+To obtain a license write to legal@gax.llc
+*/
+
 package rest
 
 import (
@@ -25,8 +31,8 @@ func (server *HttpServer) Start() {
 
 	private := r.Group("/", checkAPIkey())
 	{
-		private.POST("/api/orders", PlaceOder)
-		private.POST("/api/backendOrder", BackendOrder)
+		//private.POST("/api/orders", PlaceOrderAPI)
+		private.POST("/api/backendOrder", BackendOrder) //for testing purpose
 		private.POST("/api/account/create", CreateAccount)
 		private.PATCH("/api/account/update", UpdateAccount)
 	}
