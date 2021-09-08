@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+You may not use, distribute and modify this code without a license;
+To obtain a license write to legal@gax.llc
+*/
+
 package matching
 
 import (
@@ -118,6 +124,7 @@ func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
 	return nil
 }
 
+//UpdateDepth: updates the order in orderbook depth
 func (d *depth) UpdateDepth(orderId int64, timer int64) bool {
 	order, found := d.orders[orderId]
 	if !found {
@@ -129,6 +136,7 @@ func (d *depth) UpdateDepth(orderId int64, timer int64) bool {
 	return true
 }
 
+//ApplyOrder: Provides window of execution to a order and task related to matching is carried out
 func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 	err := o.orderIdWindow.put(order.Id)
 	if err != nil {
@@ -220,7 +228,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size, takerOrder.ExpiresIn, makerOrder.ExpiresIn, takerOrder.Art, makerOrder.Art)
 		logs = append(logs, matchLog)
 		o.ArtTraded[makerOrder.Art] = price
-		fmt.Println("Last traded price ", o.ArtTraded)
+		log.Info("Last traded price ", o.ArtTraded)
 		// maker is filled
 		if makerOrder.Size.IsZero() {
 
@@ -260,6 +268,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 	return logs
 }
 
+//CancelOrder: cancels the order and removes it from orderbook
 func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 	_ = o.orderIdWindow.put(order.Id)
 
@@ -279,6 +288,7 @@ func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 	return append(logs, doneLog)
 }
 
+//Snapsot: Creates the snapshot
 func (o *orderBook) Snapshot() orderBookSnapshot {
 	lengthSell := 0
 	lengthBuy := 0
@@ -326,6 +336,7 @@ func (o *orderBook) Snapshot() orderBookSnapshot {
 	return snapshot
 }
 
+//Restore: restores orders from snapshot to order book
 func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 	o.logSeq = snapshot.LogSeq
 	o.tradeSeq = snapshot.TradeSeq
@@ -407,6 +418,7 @@ func priceOrderIdKeyDescComparator(a, b interface{}) int {
 	}
 }
 
+//NewOrderBook: Initializes the orderbook
 func NewOrderBook(product *models.Product) *orderBook {
 	orderBook := &orderBook{
 		product:       product,
@@ -417,6 +429,7 @@ func NewOrderBook(product *models.Product) *orderBook {
 	return orderBook
 }
 
+//NewArtDepth: creates orderbook depth for an art
 func (o *orderBook) NewArtDepth(art string) map[models.Side]*depth {
 	asks := &depth{
 		queue:  treemap.NewWith(priceOrderIdKeyAscComparator),
