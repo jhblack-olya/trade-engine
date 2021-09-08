@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+You may not use, distribute and modify this code without a license;
+To obtain a license write to legal@gax.llc
+*/
+
 package worker
 
 import (
@@ -15,6 +21,7 @@ type FillMaker struct {
 	logSeq    int64
 }
 
+//NewFillMaker: pushes filled order to database log stream
 func NewFillMaker(logReader matching.LogReader) *FillMaker {
 	t := &FillMaker{
 		fillCh:    make(chan *models.Fill, 1000),

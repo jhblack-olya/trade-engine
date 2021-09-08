@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+You may not use, distribute and modify this code without a license;
+To obtain a license write to legal@gax.llc
+*/
+
 package matching
 
 import (
@@ -32,6 +38,7 @@ type offsetOrder struct {
 	Order  *models.Order
 }
 
+//NewEngine Intitializes matching engine node
 func NewEngine(product *models.Product, orderReader OrderReader, logStore LogStore, snapshotStore SnapshotStore) *Engine {
 	e := &Engine{
 		productId:            product.Id,
@@ -114,6 +121,7 @@ func (e *Engine) runFetcher() {
 	}
 }
 
+//runApplier: Manages order execution
 func (e *Engine) runApplier() {
 	var orderOffset int64
 
@@ -146,6 +154,7 @@ func (e *Engine) runApplier() {
 	}
 }
 
+//runCommitter: generates sequence number for log, writes log data into kafka broker and approves snapshots
 func (e *Engine) runCommitter() {
 	var seq = e.OrderBook.logSeq
 	var pending *Snapshot = nil
@@ -190,6 +199,7 @@ func (e *Engine) runCommitter() {
 	}
 }
 
+//runSnapshots: stores snapshots
 func (e *Engine) runSnapshots() {
 	// Order orderOffset at the last snapshot
 	orderOffset := e.orderOffset
@@ -217,12 +227,14 @@ func (e *Engine) runSnapshots() {
 	}
 }
 
+// restore: restores orders from snapshot to order book
 func (e *Engine) restore(snapshot *Snapshot) {
 	logger.Infof("restoring: %+v", *snapshot)
 	e.orderOffset = snapshot.OrderOffset
 	e.OrderBook.Restore(&snapshot.OrderBookSnapshot)
 }
 
+//countDownTimer: times the order
 func (e *Engine) countDownTimer() {
 	for {
 		select {

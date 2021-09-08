@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+You may not use, distribute and modify this code without a license;
+To obtain a license write to legal@gax.llc
+*/
+
 package worker
 
 import (
@@ -17,6 +23,7 @@ type FillExecutor struct {
 	workerChs [fillWorkerNum]chan *models.Fill
 }
 
+//NewFillExecutor executes operations for unsettled fills
 func NewFillExecutor() *FillExecutor {
 	f := &FillExecutor{
 		workerChs: [fillWorkerNum]chan *models.Fill{},
