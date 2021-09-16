@@ -56,7 +56,9 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 			funds = decimal.Zero
 		}
 	} else {
-		return nil, errors.New("unknown order type")
+		err := errors.New("unknown order type")
+		log.Fatalln(err.Error())
+		return nil, err
 	}
 
 	var holdCurrency string
@@ -129,7 +131,9 @@ func ExecuteFill(orderId, timer int64, art string) error {
 		return err
 	}
 	if product == nil {
-		return fmt.Errorf("Product not found: %v", order.ProductId)
+		err := fmt.Errorf("Product not found: %v", order.ProductId)
+		log.Fatalln(err.Error())
+		return err
 	}
 
 	fills, err := mysql.SharedStore().GetUnsettledFillsByOrderId(orderId)

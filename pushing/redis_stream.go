@@ -64,7 +64,7 @@ func (s *redisStream) Start() {
 						continue
 					}
 
-					fmt.Println("publishing order", ChannelOrder.Format(order.ProductId, order.UserId))
+					fmt.Println("publishing order:productId:userId", ChannelOrder.Format(order.ProductId, order.UserId))
 					s.sub.publish(ChannelOrder.Format(order.ProductId, order.UserId), OrderMessage{
 						UserId:        order.UserId,
 						Type:          "order",
