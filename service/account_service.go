@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/prometheus/common/log"
 	"github.com/shopspring/decimal"
 	"gitlab.com/gae4/trade-engine/models"
 	"gitlab.com/gae4/trade-engine/models/mysql"
@@ -28,16 +29,19 @@ func ExecuteBill(userId int64, currency string) error {
 		})
 
 		if err != nil {
+			log.Errorln(err.Error())
 			return err
 		}
 
 		account, err = tx.GetAccountForUpdate(userId, currency)
 		if err != nil {
+			log.Errorln(err.Error())
 			return err
 		}
 	}
 	bills, err := tx.GetUnsettledBillsByUserId(userId, currency)
 	if err != nil {
+		log.Errorln(err.Error())
 		return err
 	}
 
@@ -51,6 +55,7 @@ func ExecuteBill(userId int64, currency string) error {
 		bill.Settled = true
 		err = tx.UpdateBill(bill)
 		if err != nil {
+			log.Errorln(err.Error())
 			return err
 		}
 	}
@@ -69,7 +74,9 @@ func ExecuteBill(userId int64, currency string) error {
 }
 func HoldBalance(db models.Store, userId int64, currency string, size decimal.Decimal, billType models.BillType) error {
 	if size.LessThanOrEqual(decimal.Zero) {
-		return errors.New("size less than 0")
+		err := errors.New("size less than 0")
+		log.Errorln(err.Error())
+		return err
 	}
 
 	enough, err := HasEnoughBalance(userId, currency, size)
@@ -78,16 +85,21 @@ func HoldBalance(db models.Store, userId int64, currency string, size decimal.De
 	}
 
 	if !enough {
-		return errors.New(fmt.Sprintf("no enough %v : request=%v", currency, size))
+		err := errors.New(fmt.Sprintf("no enough %v : request=%v", currency, size))
+		log.Errorln(err.Error())
+		return err
 	}
 
 	account, err := db.GetAccountForUpdate(userId, currency)
 	if err != nil {
+		log.Errorln(err.Error())
 		return err
 	}
 
 	if account == nil {
-		return errors.New("no enough")
+		err := errors.New("no enough")
+		log.Errorln(err.Error())
+		return err
 	}
 
 	account.Available = account.Available.Sub(size)
@@ -105,11 +117,13 @@ func HoldBalance(db models.Store, userId int64, currency string, size decimal.De
 
 	err = db.AddBills([]*models.Bill{bill})
 	if err != nil {
+		log.Errorln(err.Error())
 		return err
 	}
 
 	err = db.UpdateAccount(account)
 	if err != nil {
+		log.Errorln(err.Error())
 		return err
 	}
 
