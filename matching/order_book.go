@@ -145,7 +145,6 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 	}
 	//taker who comes in with new order normally to do immediate buy or sell
 	takerOrder := newBookOrder(order)
-
 	//setting Market-Buy order to Infinite high and Market-sell order at zero.
 	//which ensures that market prices will cross/execute
 	if takerOrder.Type == models.OrderTypeMarket {
@@ -155,7 +154,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			takerOrder.Price = decimal.Zero
 		}
 	}
-	var executedValue, filledSize, makerExecutedValue, makerFilledSize decimal.Decimal
+	var executedValue, filledSize /*, makerExecutedValue, makerFilledSize*/ decimal.Decimal
 	makerDepth := o.artDepths[takerOrder.Art][takerOrder.Side.Opposite()]
 	for itr := makerDepth.queue.Iterator(); itr.Next(); {
 		//maker who have already placed order normally not an immediate buyer or seller
@@ -189,8 +188,8 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			//adjust the size of taker order so that if there is no most available deal to complete taker order size then
 			//remaining can be completed for next itteration
 			takerOrder.Size = takerOrder.Size.Sub(size)
-			executedValue = makerOrder.Price.Add(executedValue)
-			filledSize = makerOrder.Size.Add(filledSize)
+			executedValue = executedValue.Add(makerOrder.Price.Mul(size))
+			filledSize = size.Add(filledSize)
 
 		} else if takerOrder.Type == models.OrderTypeMarket && takerOrder.Side == models.SideBuy {
 			if takerOrder.Funds.IsZero() {
@@ -226,8 +225,9 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		//adjust size of maker order or delete maker order if size is zero
 		// according to above example for this itteration fetched maker order has been settled and will be
 		//deleted from order book
-		makerExecutedValue = price.Add(makerExecutedValue)
-		makerFilledSize = size.Add(makerFilledSize)
+
+		//makerExecutedValue = makerExecutedValue.Add(price.Mul(size))
+		//makerFilledSize = size.Add(makerFilledSize)
 		err := makerDepth.decrSize(makerOrder.OrderId, size)
 		if err != nil {
 			log.Fatal(err)
@@ -241,7 +241,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		// maker is filled
 		if makerOrder.Size.IsZero() {
 
-			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn, makerOrder.Art, makerExecutedValue, makerFilledSize)
+			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn, makerOrder.Art, decimal.Zero, decimal.Zero)
 			logs = append(logs, doneLog)
 		}
 	}
