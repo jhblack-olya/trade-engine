@@ -53,6 +53,8 @@ type DoneLog struct {
 	ExpiresIn      int64
 	BackendOrderId string
 	Art            string
+	ExecutedValue  decimal.Decimal
+	FilledSize     decimal.Decimal
 }
 
 type MatchLog struct {
@@ -105,7 +107,7 @@ func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int
 	}
 }
 
-func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, art string) *DoneLog {
+func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, art string, executedValue, filledSize decimal.Decimal) *DoneLog {
 	return &DoneLog{
 		Base:           Base{LogTypeDone, logSeq, productId, time.Now()},
 		OrderId:        order.OrderId,
@@ -116,6 +118,8 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 		ExpiresIn:      timer,
 		BackendOrderId: order.BackendOrderId,
 		Art:            art,
+		ExecutedValue:  executedValue,
+		FilledSize:     filledSize,
 	}
 }
 

@@ -155,7 +155,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			takerOrder.Price = decimal.Zero
 		}
 	}
-
+	var executedValue, filledSize, makerExecutedValue, makerFilledSize decimal.Decimal
 	makerDepth := o.artDepths[takerOrder.Art][takerOrder.Side.Opposite()]
 	for itr := makerDepth.queue.Iterator(); itr.Next(); {
 		//maker who have already placed order normally not an immediate buyer or seller
@@ -189,6 +189,8 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			//adjust the size of taker order so that if there is no most available deal to complete taker order size then
 			//remaining can be completed for next itteration
 			takerOrder.Size = takerOrder.Size.Sub(size)
+			executedValue = makerOrder.Price.Add(executedValue)
+			filledSize = makerOrder.Size.Add(filledSize)
 
 		} else if takerOrder.Type == models.OrderTypeMarket && takerOrder.Side == models.SideBuy {
 			if takerOrder.Funds.IsZero() {
@@ -207,23 +209,30 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			//taking minimum of takerSize and makerSize so trade gets completely filled
 			//size=3
 			size = decimal.Min(takerSize, makerOrder.Size)
+			fmt.Println("size evaluated ", size)
 			//fund=3*6=18
 			funds := size.Mul(price)
 			//adjusting remaining fund for traker 25-18 = 7
 			takerOrder.Funds = takerOrder.Funds.Sub(funds)
 			//Here trade executed for 3 bid remaining 2 bid will be filled for next available maker
 			// Now market price or latest trade price is 6
+
+			executedValue = funds.Add(executedValue)
+			filledSize = size.Add(filledSize)
+
 		} else {
 			log.Fatal("unknown orderType and side combination")
 		}
 		//adjust size of maker order or delete maker order if size is zero
 		// according to above example for this itteration fetched maker order has been settled and will be
 		//deleted from order book
+		makerExecutedValue = price.Add(makerExecutedValue)
+		makerFilledSize = size.Add(makerFilledSize)
 		err := makerDepth.decrSize(makerOrder.OrderId, size)
 		if err != nil {
 			log.Fatal(err)
 		}
-
+		//orderPrice=
 		// matched,write a log
 		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size, takerOrder.ExpiresIn, makerOrder.ExpiresIn, takerOrder.Art, makerOrder.Art)
 		logs = append(logs, matchLog)
@@ -232,7 +241,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		// maker is filled
 		if makerOrder.Size.IsZero() {
 
-			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn, makerOrder.Art)
+			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn, makerOrder.Art, makerExecutedValue, makerFilledSize)
 			logs = append(logs, doneLog)
 		}
 	}
@@ -262,7 +271,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 				reason = models.DoneReasonCancelled
 			}
 		}
-		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason, takerOrder.ExpiresIn, takerOrder.Art)
+		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason, takerOrder.ExpiresIn, takerOrder.Art, executedValue, filledSize)
 		logs = append(logs, doneLog)
 	}
 	return logs
@@ -284,7 +293,7 @@ func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 		panic(err)
 	}
 
-	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn, order.Art)
+	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn, order.Art, decimal.Zero, decimal.Zero)
 	return append(logs, doneLog)
 }
 
