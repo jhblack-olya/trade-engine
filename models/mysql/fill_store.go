@@ -50,14 +50,14 @@ func (s *Store) AddFills(fills []*models.Fill) error {
 	}
 	var valueStrings []string
 	for _, fill := range fills {
-		valueString := fmt.Sprintf("(NOW(), '%v', %v, %v, %v, %v,%v, %v,'%v',%v,%v,'%v',%v,'%v',%v,%v,'%v')",
+		valueString := fmt.Sprintf("(NOW(), '%v', %v, %v, %v, %v,%v, %v,'%v',%v,%v,'%v',%v,'%v',%v,%v,'%v',%v)",
 			fill.ProductId, fill.TradeId, fill.OrderId, fill.MessageSeq, fill.Size, fill.Price, fill.Funds,
-			fill.Liquidity, fill.Fee, fill.Settled, fill.Side, fill.Done, fill.DoneReason, fill.LogOffset, fill.LogSeq, fill.Art)
+			fill.Liquidity, fill.Fee, fill.Settled, fill.Side, fill.Done, fill.DoneReason, fill.LogOffset, fill.LogSeq, fill.Art, fill.ExpiresIn)
 		valueStrings = append(valueStrings, valueString)
 	}
 
 	sql := fmt.Sprintf("INSERT IGNORE INTO g_fill (created_at,product_id,trade_id,order_id, message_seq,size,"+
-		"price,funds,liquidity,fee,settled,side,done,done_reason,log_offset,log_seq,art) VALUES %s",
+		"price,funds,liquidity,fee,settled,side,done,done_reason,log_offset,log_seq,art,expires_in) VALUES %s",
 		strings.Join(valueStrings, ","))
 	fmt.Println("SQL \n ", sql)
 	return s.db.Exec(sql).Error
