@@ -112,14 +112,16 @@ func BackendOrder(ctx *gin.Context) {
 }
 
 func EstimateAmount(ctx *gin.Context) {
-	var req estimateRequest
-	err := ctx.BindJSON(&req)
-	if err != nil {
+	productId := ctx.Query("product_id")
+	size, err := decimal.NewFromString(ctx.Query("size"))
+	art := ctx.Query("art_name")
+	side := ctx.Query("side")
+	if err != nil || productId == "" || art == "" || side == "" {
 		ctx.JSON(http.StatusBadRequest, newMessageVo(err))
 		return
 	}
 	resp := estimateResponse{
-		Amount: standalone.GetEstimate(req.ProductId, decimal.NewFromFloat(req.Size), req.Art, models.Side(req.Side)),
+		Amount: standalone.GetEstimate(productId, size, art, models.Side(side)),
 	}
 	ctx.JSON(http.StatusOK, resp)
 }
