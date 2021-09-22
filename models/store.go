@@ -40,4 +40,5 @@ type Store interface {
 
 	GetLastTradeByProductId(productId string) (*Trade, error)
 	AddTrades(trades []*Trade) error
+	GetOpenLimitOrderByArt(side, art string) ([]*EstimateValue, error)
 }

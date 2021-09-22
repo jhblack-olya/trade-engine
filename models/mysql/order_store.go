@@ -7,6 +7,7 @@ To obtain a license write to legal@gax.llc
 package mysql
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -56,4 +57,14 @@ func (s *Store) UpdateOrderStatus(orderId int64, oldStatus, newStatus models.Ord
 		return false, ret.Error
 	}
 	return ret.RowsAffected > 0, nil
+}
+
+func (s *Store) GetOpenLimitOrderByArt(side, art string) ([]*models.EstimateValue, error) {
+	var orders []*models.EstimateValue
+	fmt.Println(side, art)
+	err := s.db.Raw("SELECT price,sum(size-filled_size)as quantity FROM g_order WHERE side=? and art=? and  type=? and status=? group by price,side order by price", side, art, "limit", "open").Scan(&orders).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return orders, err
 }

@@ -189,7 +189,7 @@ type GFill struct {
 	DoneReason DoneReason
 	LogOffset  int64
 	LogSeq     int64
-	//	ExpiresIn  int64 `gorm:"-"`
+	//ExpiresIn  int64 `gorm:"-"`
 	//	ClientOid  string
 	Art string
 }
@@ -277,4 +277,9 @@ type PlaceOrderRequest struct {
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
 	BackendOrderId string  `json:"backendOrderId"`
 	Art            string  `json:"art_name"`
+}
+
+type EstimateValue struct {
+	Price    float64
+	Quantity float64
 }
