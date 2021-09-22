@@ -47,13 +47,6 @@ type accountUpdateRequest struct {
 	Amount   decimal.Decimal `json:"amount"`
 }
 
-type estimateRequest struct {
-	ProductId string  `json:"product_id"`
-	Size      float64 `json:"size"`
-	Art       string  `json:"art_name"`
-	Side      string  `json:"side"`
-}
-
 type estimateResponse struct {
 	Amount decimal.Decimal `json:"estimated_amount"`
 }
