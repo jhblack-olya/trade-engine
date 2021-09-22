@@ -117,7 +117,7 @@ func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest inte
 		f := v.Field(i)
 
 		colIdx := s.getColumnIndexByName(e, utils.SnakeCase(t.Field(i).Name))
-		if e.Table.Name == "g_fill" && (t.Field(i).Name == "ExpiresIn" || t.Field(i).Name == "ClientOid") {
+		if e.Table.Name == "g_fill" && /*(t.Field(i).Name == "ExpiresIn" || t.Field(i).Name == "ClientOid")*/ t.Field(i).Name == "ClientOid" {
 			continue
 		}
 		rowVal := row[colIdx]
