@@ -21,6 +21,7 @@ import (
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
 	"gitlab.com/gae4/trade-engine/service"
+	"gitlab.com/gae4/trade-engine/standalone"
 )
 
 func PlaceOrderAPI(ctx *gin.Context) {
@@ -108,4 +109,17 @@ func BackendOrder(ctx *gin.Context) {
 	logStore.Store(logs)
 
 	ctx.JSON(http.StatusOK, "Order placed")
+}
+
+func EstimateAmount(ctx *gin.Context) {
+	var req estimateRequest
+	err := ctx.BindJSON(&req)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, newMessageVo(err))
+		return
+	}
+	resp := estimateResponse{
+		Amount: standalone.GetEstimate(req.ProductId, decimal.NewFromFloat(req.Size), req.Art, models.Side(req.Side)),
+	}
+	ctx.JSON(http.StatusOK, resp)
 }
