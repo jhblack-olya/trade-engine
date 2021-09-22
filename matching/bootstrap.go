@@ -12,6 +12,8 @@ import (
 	"gitlab.com/gae4/trade-engine/service"
 )
 
+var MatchEngine map[string]*Engine
+
 func StartEngine() {
 	gbeConfig := conf.GetConfig()
 
@@ -19,13 +21,14 @@ func StartEngine() {
 	if err != nil {
 		panic(err)
 	}
-
+	MatchEngine = make(map[string]*Engine)
 	for _, product := range products {
 		orderReader := NewKafkaOrderReader(product.Id, gbeConfig.Kafka.Brokers)
 		snapshotStore := NewRedisSnapshotStore(product.Id)
 		logStore := NewKafkaLogStore(product.Id, gbeConfig.Kafka.Brokers)
 		matchEngine := NewEngine(product, orderReader, logStore, snapshotStore)
 		matchEngine.Start()
+		MatchEngine[product.Id] = matchEngine
 
 	}
 

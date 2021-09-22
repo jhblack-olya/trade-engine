@@ -9,6 +9,7 @@ package matching
 import (
 	"time"
 
+	"github.com/shopspring/decimal"
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/models"
 )
@@ -262,6 +263,7 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
+				//	fmt.Println("order ", o.Order.Id, " expires in ", expiresIn)
 				status := d.UpdateDepth(o.Order.Id, expiresIn)
 				// if status false order not present in order book it may have completed or got cancelled prior
 				if !status {
@@ -273,5 +275,25 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 			break
 		}
 	}
+
+}
+
+func (e *Engine) GetLimitOrders(side models.Side, art string, size decimal.Decimal) decimal.Decimal {
+	var estimateAmt decimal.Decimal
+	limitOrders := e.OrderBook.artDepths[art][side.Opposite()]
+	for itr := limitOrders.queue.Iterator(); itr.Next(); {
+		orders := limitOrders.orders[itr.Value().(int64)]
+		if orders.Size.GreaterThanOrEqual(size) {
+			estimateAmt = estimateAmt.Add(orders.Price.Mul(size))
+			size = decimal.Zero
+		} else {
+			estimateAmt = estimateAmt.Add(orders.Price.Mul(orders.Size))
+			size = size.Sub(orders.Size)
+		}
+		if size == decimal.Zero {
+			break
+		}
+	}
+	return estimateAmt
 
 }

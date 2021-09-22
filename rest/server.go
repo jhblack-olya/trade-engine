@@ -35,6 +35,7 @@ func (server *HttpServer) Start() {
 		private.POST("/api/backendOrder", BackendOrder) //for testing purpose
 		private.POST("/api/account/create", CreateAccount)
 		private.PATCH("/api/account/update", UpdateAccount)
+		private.GET("/api/estimate", EstimateAmount)
 	}
 
 	err := r.Run(server.addr)
