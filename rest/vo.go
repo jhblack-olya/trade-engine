@@ -48,5 +48,6 @@ type accountUpdateRequest struct {
 }
 
 type estimateResponse struct {
-	Amount decimal.Decimal `json:"estimated_amount"`
+	Amount           decimal.Decimal `json:"estimated_amount"`
+	MostAvailableAmt decimal.Decimal `json:"most_available_amount"`
 }

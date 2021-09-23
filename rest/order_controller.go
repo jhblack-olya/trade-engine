@@ -120,8 +120,10 @@ func EstimateAmount(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, newMessageVo(err))
 		return
 	}
+	estAmt, minAmt := standalone.GetEstimate(productId, size, art, models.Side(side))
 	resp := estimateResponse{
-		Amount: standalone.GetEstimate(productId, size, art, models.Side(side)),
+		Amount:           estAmt,
+		MostAvailableAmt: minAmt,
 	}
 	ctx.JSON(http.StatusOK, resp)
 }
