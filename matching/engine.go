@@ -278,11 +278,16 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 
 }
 
-func (e *Engine) GetLimitOrders(side models.Side, art string, size decimal.Decimal) decimal.Decimal {
-	var estimateAmt decimal.Decimal
+func (e *Engine) GetLimitOrders(side models.Side, art string, size decimal.Decimal) (decimal.Decimal, decimal.Decimal) {
+	var estimateAmt, mostAvailableAmt decimal.Decimal
 	limitOrders := e.OrderBook.artDepths[art][side.Opposite()]
+	flag := 0
 	for itr := limitOrders.queue.Iterator(); itr.Next(); {
 		orders := limitOrders.orders[itr.Value().(int64)]
+		if flag == 0 {
+			mostAvailableAmt = orders.Price
+			flag = 1
+		}
 		if orders.Size.GreaterThanOrEqual(size) {
 			estimateAmt = estimateAmt.Add(orders.Price.Mul(size))
 			size = decimal.Zero
@@ -294,6 +299,6 @@ func (e *Engine) GetLimitOrders(side models.Side, art string, size decimal.Decim
 			break
 		}
 	}
-	return estimateAmt
+	return estimateAmt, mostAvailableAmt
 
 }
