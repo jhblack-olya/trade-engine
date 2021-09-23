@@ -189,7 +189,7 @@ type GFill struct {
 	DoneReason DoneReason
 	LogOffset  int64
 	LogSeq     int64
-	//ExpiresIn  int64 `gorm:"-"`
+	ExpiresIn  int64
 	//	ClientOid  string
 	Art string
 }
@@ -214,7 +214,7 @@ type Fill struct {
 	LogOffset  int64
 	LogSeq     int64
 	ClientOid  string
-	ExpiresIn  int64 `gorm:"-"`
+	ExpiresIn  int64
 	Art        string
 }
 
