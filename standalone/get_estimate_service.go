@@ -12,5 +12,10 @@ import (
 )
 
 func GetEstimate(productId string, size decimal.Decimal, art string, side models.Side) (decimal.Decimal, decimal.Decimal) {
-	return matching.MatchEngine[productId].GetLimitOrders(side, art, size)
+	e, ok := matching.MatchEngine[productId]
+	if !ok {
+		return decimal.Zero, decimal.Zero
+	}
+
+	return e.GetLimitOrders(side, art, size)
 }
