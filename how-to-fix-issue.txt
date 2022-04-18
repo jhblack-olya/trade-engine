@@ -1,0 +1,65 @@
+###### How to fix issues specific ####
+kafka issue wsl2 specific
+kafka is installed in windows
+from wsl2
+cd /mnt/c/kafka  ### kafka path
+run zookeeper
+bin/zookeeper-server-start.sh ./config/zookeeper.properties
+
+run kafka
+bin/kafka-server-start.sh ./config/server.properties
+
+run mysql and redis using docker-compose file
+docker compose file content
+
+version: '3.3'
+services:
+  db:
+    container_name: mysql
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'tradeengine'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'root'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - C:\Workspace\mysql\data:/var/lib/mysql
+  redis:
+    container_name: redis
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    entrypoint: redis-server --appendonly yes
+    restart: always
+volumes: 
+  node_modules: 
+  my-db:
+
+
+******************************************************************
+Enable mysql log bin
+ssh into mysql container 
+go to mysql cli using mysql -uroot -proot
+
+execute query to check log_bin is enabled
+SHOW VARIABLES LIKE 'log_bin';
+if OFF
+
+open etc/mysql/mysql.conf.d/mysqld.cnf
+add following lines under [mysqld]
+server-id=1
+log-bin
+--------
+restart the container
+=====================
+topics
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_message_ABT-USDT --from-beginning
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic matching_order_ABT-USDT --from-beginning
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic backend_order --from-beginning
