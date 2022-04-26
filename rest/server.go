@@ -36,6 +36,7 @@ func (server *HttpServer) Start() {
 		private.PATCH("/api/account/update", UpdateAccount)
 		private.GET("/api/estimate", EstimateAmount)
 	}
+	r.GET("/health", healthCheck())
 
 	err := r.Run(server.addr)
 	if err != nil {
