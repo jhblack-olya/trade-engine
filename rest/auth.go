@@ -15,6 +15,11 @@ import (
 
 func checkAPIkey() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		health := c.Query("healthCheck")
+		if health == "true" {
+			c.JSON(http.StatusOK, "Ok")
+			return
+		}
 		apiKey := c.Request.Header.Get("Authorization")
 		if len(apiKey) == 0 {
 			c.AbortWithStatusJSON(http.StatusForbidden, newMessageVo(errors.New("token not found")))
