@@ -15,6 +15,11 @@ import (
 // Used to indicate the direction of an order or transaction: buy, sellx
 type Side string
 
+var CommonError map[string]string
+var RedisErrCh chan error
+var MysqlErrCh chan error
+var KafkaErrCh chan error
+
 func NewSideFromString(s string) (*Side, error) {
 	side := Side(s)
 	switch side {

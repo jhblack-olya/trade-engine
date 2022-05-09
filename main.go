@@ -25,6 +25,22 @@ func main() {
 	go func() {
 		log.Info(http.ListenAndServe("localhost:6000", nil))
 	}()
+	models.CommonError = make(map[string]string)
+	models.RedisErrCh = make(chan error, 10)
+	models.MysqlErrCh = make(chan error, 10)
+	models.KafkaErrCh = make(chan error, 10)
+	go func() {
+		for {
+			select {
+			case val := <-models.RedisErrCh:
+				models.CommonError["redis"] = val.Error()
+			case val := <-models.MysqlErrCh:
+				models.CommonError["mysql"] = val.Error()
+			case val := <-models.KafkaErrCh:
+				models.CommonError["kafka"] = val.Error()
+			}
+		}
+	}()
 
 	controller.ProcessOrder()
 

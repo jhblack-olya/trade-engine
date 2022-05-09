@@ -42,6 +42,7 @@ func (s *redisStream) Start() {
 
 	_, err := redisClient.Ping().Result()
 	if err != nil {
+		models.RedisErrCh <- err
 		panic(err)
 	}
 
@@ -51,6 +52,7 @@ func (s *redisStream) Start() {
 			_, err := ps.Receive()
 			if err != nil {
 				log.Error(err)
+				models.RedisErrCh <- err
 				continue
 			}
 
@@ -93,6 +95,7 @@ func (s *redisStream) Start() {
 			_, err := ps.Receive()
 			if err != nil {
 				log.Error(err)
+				models.RedisErrCh <- err
 				continue
 			}
 

@@ -46,6 +46,8 @@ func (e *Engine) SubmitOrder(order *models.Order) {
 	err = getWriter(e.productId).WriteMessages(context.Background(), kafka.Message{Value: buf})
 	if err != nil {
 		log.Error(err.Error())
+		models.KafkaErrCh <- err
+
 	}
 }
 
@@ -59,5 +61,7 @@ func SubmitOrder(order *models.Order) {
 	err = getWriter(order.ProductId).WriteMessages(context.Background(), kafka.Message{Value: buf})
 	if err != nil {
 		log.Error(err.Error())
+		models.KafkaErrCh <- err
+
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"gitlab.com/gae4/trade-engine/models"
 )
 
 const (
@@ -41,5 +42,10 @@ func (s *KafkaLogStore) Store(logs []interface{}) error {
 		}
 		messages = append(messages, kafka.Message{Value: val})
 	}
-	return s.logWriter.WriteMessages(context.Background(), messages...)
+	err := s.logWriter.WriteMessages(context.Background(), messages...)
+	if err != nil {
+		models.KafkaErrCh <- err
+		return err
+	}
+	return nil
 }

@@ -80,6 +80,7 @@ func (s *FillExecutor) runMqListener() {
 		ret := redisClient.BRPop(0, models.TopicFill)
 		if ret.Err() != nil {
 			log.Error(ret.Err())
+			models.RedisErrCh <- ret.Err()
 			continue
 		} else {
 
@@ -104,6 +105,7 @@ func (s *FillExecutor) runInspector() {
 			fills, err := service.GetUnsettledFills(1000)
 			if err != nil {
 				log.Error(err)
+				models.MysqlErrCh <- err
 				continue
 			}
 
