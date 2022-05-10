@@ -36,3 +36,4 @@ docker\
 !.vscode/extensions.json
 *.code-workspace
 local-conf.json
+how-to-fix-issue.txt
