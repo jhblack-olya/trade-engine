@@ -105,7 +105,12 @@ func BackendOrder(ctx *gin.Context) {
 	logStore := NewKafkaLogStore(gbeConfig.Kafka.Brokers)
 	var logs []interface{}
 	logs = append(logs, req)
-	logStore.Store(logs)
+	err = logStore.Store(logs)
+	if err != nil {
+		models.KafkaErrCh <- err
+		ctx.JSON(http.StatusInternalServerError, "Failed to place order")
+		return
+	}
 
 	ctx.JSON(http.StatusOK, "Order placed")
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-redis/redis"
 	"gitlab.com/gae4/trade-engine/conf"
+	"gitlab.com/gae4/trade-engine/models"
 )
 
 const (
@@ -50,6 +51,9 @@ func (s *RedisSnapshotStore) GetLatest() (*Snapshot, error) {
 	if err != nil {
 		if err == redis.Nil {
 			return nil, nil
+		} else {
+			models.RedisErrCh <- err
+
 		}
 		return nil, err
 	}

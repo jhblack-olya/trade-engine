@@ -10,6 +10,7 @@ import (
 
 	"github.com/segmentio/kafka-go"
 	logger "github.com/siddontang/go-log/log"
+	"gitlab.com/gae4/trade-engine/models"
 )
 
 type KafkaLogReader struct {
@@ -51,6 +52,8 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 		kMessage, err := r.reader.FetchMessage(context.Background())
 		if err != nil {
 			logger.Error(err)
+			models.KafkaErrCh <- err
+
 			continue
 		}
 

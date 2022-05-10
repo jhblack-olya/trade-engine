@@ -169,16 +169,19 @@ func (s *BinLogStream) Start() {
 	cfg.ExcludeTableRegex = []string{"mysql\\..*"}
 	c, err := canal.NewCanal(cfg)
 	if err != nil {
+		MysqlErrCh <- err
 		panic(err)
 	}
 	c.SetEventHandler(s)
 
 	pos, err := c.GetMasterPos()
 	if err != nil {
+		MysqlErrCh <- err
 		panic(err)
 	}
 	err = c.RunFrom(pos)
 	if err != nil {
+		MysqlErrCh <- err
 		panic(err)
 	}
 }

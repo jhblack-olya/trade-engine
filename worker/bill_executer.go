@@ -63,6 +63,7 @@ func (s *BillExecutor) runMqListener() {
 		ret := redisClient.BRPop(0, models.TopicBill)
 		if ret.Err() != nil {
 			log.Error(ret.Err().Error())
+			models.RedisErrCh <- ret.Err()
 			continue
 		}
 		var bill models.Bill
@@ -81,6 +82,7 @@ func (s *BillExecutor) runInspector() {
 			bills, err := service.GetUnsettledBills()
 			if err != nil {
 				log.Error(err.Error())
+				models.MysqlErrCh <- err
 				continue
 			}
 			for _, bill := range bills {
