@@ -14,7 +14,7 @@ import (
 func GetEstimate(productId string, size decimal.Decimal, art string, side models.Side) (decimal.Decimal, decimal.Decimal) {
 	e, ok := matching.MatchEngine[productId]
 	if !ok {
-		log.Info("Estimate for art " + art + " not available")
+		log.Info("Estimate for product " + productId + " not available for art " + art)
 		return decimal.Zero, decimal.Zero
 	}
 
