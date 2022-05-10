@@ -6,6 +6,7 @@ To obtain a license write to legal@gax.llc
 package standalone
 
 import (
+	"github.com/pingcap/log"
 	"github.com/shopspring/decimal"
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
@@ -14,6 +15,7 @@ import (
 func GetEstimate(productId string, size decimal.Decimal, art string, side models.Side) (decimal.Decimal, decimal.Decimal) {
 	e, ok := matching.MatchEngine[productId]
 	if !ok {
+		log.Info("Estimate for art " + art + " not available")
 		return decimal.Zero, decimal.Zero
 	}
 
