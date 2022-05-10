@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/siddontang/go/log"
 	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/models"
 )
@@ -47,24 +48,32 @@ func healthCheck() gin.HandlerFunc {
 
 		}()
 		health := health{}
-		health.Kafka = "ok"
-		health.Mysql = "ok"
-		health.Redis = "ok"
+		health.Kafka = ""
+		health.Mysql = ""
+		health.Redis = ""
+		message := ""
 		status := http.StatusOK
 		if val, ok := models.CommonError["redis"]; ok {
-			health.Redis = val
+			health.Redis = "[redis]: " + val + " "
+			log.Error("Redis health declined ", health.Redis)
 			status = http.StatusBadRequest
 		}
 		if val, ok := models.CommonError["mysql"]; ok {
-			health.Mysql = val
+			health.Mysql = "[DB]: " + val + " "
+			log.Error("DB health declined ", health.Mysql)
 			status = http.StatusBadRequest
 		}
 		if val, ok := models.CommonError["kafka"]; ok {
-			health.Kafka = val
+			health.Kafka = "[kafka]: " + val + " "
+			log.Error("Kafka health declined ", health.Kafka)
 			status = http.StatusBadRequest
-
 		}
-		c.JSON(status, health)
+		if health.Kafka != "" || health.Mysql != "" || health.Redis != "" {
+			message = health.Kafka + health.Mysql + health.Redis
+		} else {
+			message = "ok"
+		}
+		c.JSON(status, message)
 		return
 
 	}
