@@ -7,6 +7,7 @@ package matching
 import (
 	"time"
 
+	"github.com/pingcap/log"
 	"github.com/shopspring/decimal"
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/models"
@@ -279,6 +280,10 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 func (e *Engine) GetLimitOrders(side models.Side, art string, size decimal.Decimal) (decimal.Decimal, decimal.Decimal) {
 	var estimateAmt, mostAvailableAmt decimal.Decimal
 	limitOrders := e.OrderBook.artDepths[art][side.Opposite()]
+	if limitOrders == nil {
+		log.Info("no orders available for art" + art)
+		return decimal.Zero, decimal.Zero
+	}
 	flag := 0
 	for itr := limitOrders.queue.Iterator(); itr.Next(); {
 		orders := limitOrders.orders[itr.Value().(int64)]
