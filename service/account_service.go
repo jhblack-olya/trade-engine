@@ -20,7 +20,6 @@ func ExecuteBill(userId int64, currency string) error {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-	log.Info("Execute Bill Currency ", currency, " User Id ", userId)
 	account, err := tx.GetAccountForUpdate(userId, currency)
 	if err != nil {
 		return err
