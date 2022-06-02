@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,7 @@ func PlaceOrderAPI(ctx *gin.Context) {
 	funds := decimal.NewFromFloat(req.Funds)
 
 	order, err := service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-		side, size, price, funds, req.ExpiresIn, req.BackendOrderId, "")
+		side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, newMessageVo(err))
@@ -118,16 +119,21 @@ func BackendOrder(ctx *gin.Context) {
 func EstimateAmount(ctx *gin.Context) {
 	productId := ctx.Query("product_id")
 	size, err := decimal.NewFromString(ctx.Query("size"))
-	art := ctx.Query("art_name")
-	side := ctx.Query("side")
-	if err != nil || productId == "" || art == "" || side == "" {
+	art, err := strconv.ParseInt(ctx.Query("art_name"), 10, 64)
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, newMessageVo(err))
 		return
 	}
-	estAmt, minAmt := standalone.GetEstimate(productId, size, art, models.Side(side))
+	side := ctx.Query("side")
+	if err != nil || productId == "" || art == 0 || side == "" {
+		ctx.JSON(http.StatusBadRequest, newMessageVo(err))
+		return
+	}
+	estAmt, minAmt, sizeSum := standalone.GetEstimate(productId, size, art, models.Side(side))
 	resp := estimateResponse{
 		Amount:           estAmt,
 		MostAvailableAmt: minAmt,
+		DepthSize:        sizeSum,
 	}
 	ctx.JSON(http.StatusOK, resp)
 }

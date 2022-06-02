@@ -29,7 +29,7 @@ type placeOrderRequest struct {
 	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except market-order
 	BackendOrderId string  `json:"backendOrderId"`
-	Art            string  `json:"art_name"`
+	Art            int64   `json:"art_name"`
 }
 
 type accountRequest struct {
@@ -49,4 +49,5 @@ type accountUpdateRequest struct {
 type estimateResponse struct {
 	Amount           decimal.Decimal `json:"estimated_amount"`
 	MostAvailableAmt decimal.Decimal `json:"most_available_amount"`
+	DepthSize        decimal.Decimal `json:"depth_size"`
 }

@@ -7,6 +7,7 @@ package matching
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/segmentio/kafka-go"
 	logger "github.com/siddontang/go-log/log"
@@ -93,6 +94,7 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 			if err != nil {
 				panic(err)
 			}
+			fmt.Printf("Log reader done log \n %+v", log)
 			r.observer.OnDoneLog(&log, kMessage.Offset)
 
 		}

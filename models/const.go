@@ -6,7 +6,7 @@ To obtain a license write to legal@gax.llc
 package models
 
 const (
-	TopicOrder   = "g_order"
+	TopicOrder   = "OrderBooks"
 	TopicAccount = "g_account"
 	TopicFill    = "g_fill"
 	TopicBill    = "g_bill"

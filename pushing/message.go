@@ -45,7 +45,7 @@ type OrderMessage struct {
 	Funds         string `json:"funds"`
 	ProductId     string `json:"productId"`
 	Side          string `json:"side"`
-	OrderType     string `json:"orderType"`
+	OrderType     int64  `json:"orderType"`
 	CreatedAt     string `json:"createdAt"`
 	FillFees      string `json:"fillFees"`
 	FilledSize    string `json:"filledSize"`

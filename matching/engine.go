@@ -5,6 +5,8 @@ To obtain a license write to legal@gax.llc
 package matching
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/pingcap/log"
@@ -89,7 +91,7 @@ func (e *Engine) runFetcher() {
 	//Sending snapshot orders to timed and applier before new order comes in
 	if len(e.OrderBook.DanglingOrders) > 0 {
 		for _, dOrder := range e.OrderBook.DanglingOrders {
-			if dOrder.Type == models.OrderTypeLimit && dOrder.ExpiresIn > 0 {
+			if dOrder.Type == models.OrderTypeLimit.Int() && dOrder.ExpiresIn > 0 {
 				e.expiryCh <- &offsetOrder{offset, dOrder}
 
 			}
@@ -105,15 +107,15 @@ func (e *Engine) runFetcher() {
 			continue
 		}
 		if _, ok := e.OrderBook.artDepths[order.Art]; !ok {
-			e.OrderBook.artDepths[order.Art] = e.OrderBook.NewArtDepth(order.Art)
+			e.OrderBook.artDepths[order.Art] = e.OrderBook.NewArtDepth()
 		}
-		if order.Type == models.OrderTypeLimit && order.ExpiresIn > 0 {
+		if order.Type == models.OrderTypeLimit.Int() && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
-		} else if order.Type == models.OrderTypeLimit && order.ExpiresIn <= 0 && order.ExpiresIn != -1 {
+		} else if order.Type == models.OrderTypeLimit.Int() && order.ExpiresIn <= 0 && order.ExpiresIn != -1 {
 			order.Status = models.OrderStatusCancelling // if limit order comes with expiry less than or equal to zero
 			// cancel order if expiry is -1 its admin limit order which will not cancel
 		}
-		if order.Type == models.OrderTypeMarket {
+		if order.Type == models.OrderTypeMarket.Int() {
 			order.ExpiresIn = 0
 		}
 		e.orderCh <- &offsetOrder{offset, order}
@@ -259,6 +261,7 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 				o.Order.Status = models.OrderStatusCancelling
 				o.Order.UpdatedAt = time.Now()
 				o.Order.ExpiresIn = 0
+				logger.Info("Order ", o.Order.Id, " expired")
 				e.SubmitOrder(o.Order)
 				flag = 1
 			} else {
@@ -268,6 +271,9 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 				if !status {
 					flag = 1
 				}
+				//if tp, ok := d.orders[o.Order.Id]; ok {
+				//	logger.Info("Order ", o.Order.Id, " checking expiry", tp.ExpiresIn)
+				//}
 			}
 		}
 		if flag == 1 {
@@ -277,16 +283,22 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 
 }
 
-func (e *Engine) GetLimitOrders(side models.Side, art string, size decimal.Decimal) (decimal.Decimal, decimal.Decimal) {
+func (e *Engine) GetLimitOrders(side models.Side, art int64, size decimal.Decimal) (decimal.Decimal, decimal.Decimal, decimal.Decimal) {
 	var estimateAmt, mostAvailableAmt decimal.Decimal
 	limitOrders := e.OrderBook.artDepths[art][side.Opposite()]
 	if limitOrders == nil {
-		log.Info("no orders available for art" + art)
-		return decimal.Zero, decimal.Zero
+		log.Info("no orders available for art" + strconv.FormatInt(art, 10))
+		return decimal.Zero, decimal.Zero, decimal.Zero
 	}
 	flag := 0
+	sizeSum := decimal.Zero
+	fmt.Println("\n\n I am in get limit order")
+	fmt.Println("\n size sum", sizeSum)
 	for itr := limitOrders.queue.Iterator(); itr.Next(); {
 		orders := limitOrders.orders[itr.Value().(int64)]
+		//	sizeSum = orders.Size.Add(sizeSum)
+		//	fmt.Println("\n size sum", sizeSum)
+
 		if flag == 0 {
 			mostAvailableAmt = orders.Price
 			flag = 1
@@ -301,7 +313,15 @@ func (e *Engine) GetLimitOrders(side models.Side, art string, size decimal.Decim
 		if size == decimal.Zero {
 			break
 		}
+		//	fmt.Printf("\n orders %+v", orders)
 	}
-	return estimateAmt, mostAvailableAmt
+	for itr := limitOrders.queue.Iterator(); itr.Next(); {
+		orders := limitOrders.orders[itr.Value().(int64)]
+		sizeSum = orders.Size.Add(sizeSum)
+		fmt.Println("\n size sum", sizeSum)
+		fmt.Printf("\n orders %+v", orders)
+
+	}
+	return estimateAmt, mostAvailableAmt, sizeSum
 
 }

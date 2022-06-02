@@ -39,7 +39,7 @@ type OpenLog struct {
 	Side           models.Side
 	ExpiresIn      int64
 	BackendOrderId string
-	Art            string
+	Art            int64
 }
 
 type DoneLog struct {
@@ -51,9 +51,11 @@ type DoneLog struct {
 	Side           models.Side
 	ExpiresIn      int64
 	BackendOrderId string
-	Art            string
+	Art            int64
 	ExecutedValue  decimal.Decimal
 	FilledSize     decimal.Decimal
+	CancelledAt    string
+	ExecutedAt     string
 }
 
 type MatchLog struct {
@@ -70,11 +72,13 @@ type MatchLog struct {
 	MakerExpiresIn      int64
 	TakerBackendOrderId string
 	MakerBackendOrderId string
-	TakerArt            string
-	MakerArt            string
+	TakerArt            int64
+	MakerArt            int64
+	TakerExecutedAt     string
+	MakerExecutedAt     string
 }
 
-func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64, takerArt, makerArt string) *MatchLog {
+func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64, takerArt, makerArt int64, takerMatchedAt, makermatchedAt string) *MatchLog {
 	return &MatchLog{
 		Base:                Base{LogTypeMatch, logSeq, productId, time.Now()},
 		TradeId:             tradeSeq,
@@ -91,9 +95,11 @@ func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, mak
 		MakerBackendOrderId: makerOrder.BackendOrderId,
 		TakerArt:            takerArt,
 		MakerArt:            makerArt,
+		TakerExecutedAt:     takerMatchedAt,
+		MakerExecutedAt:     makermatchedAt,
 	}
 }
-func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64, art string) *OpenLog {
+func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64, art int64) *OpenLog {
 	return &OpenLog{
 		Base:           Base{LogTypeOpen, logSeq, productId, time.Now()},
 		OrderId:        takerOrder.OrderId,
@@ -106,7 +112,17 @@ func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int
 	}
 }
 
-func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, art string, executedValue, filledSize decimal.Decimal) *DoneLog {
+func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, art int64, executedValue, filledSize decimal.Decimal, timeStamp string) *DoneLog {
+	var (
+		cancelledTime string
+		matchedAt     string
+	)
+
+	if reason == models.DoneReasonCancelled {
+		cancelledTime = timeStamp
+	} else if reason == models.DoneReasonFilled {
+		matchedAt = timeStamp
+	}
 	return &DoneLog{
 		Base:           Base{LogTypeDone, logSeq, productId, time.Now()},
 		OrderId:        order.OrderId,
@@ -119,6 +135,8 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 		Art:            art,
 		ExecutedValue:  executedValue,
 		FilledSize:     filledSize,
+		CancelledAt:    cancelledTime,
+		ExecutedAt:     matchedAt,
 	}
 }
 

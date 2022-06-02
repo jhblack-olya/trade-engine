@@ -50,7 +50,8 @@ func NewFillExecutor() *FillExecutor {
 						settledOrderCache.Add(order.Id, struct{}{})
 						continue
 					}
-					err = service.ExecuteFill(fill.OrderId, fill.ExpiresIn, fill.Art)
+					cancelledAt := fill.CancelledAt
+					err = service.ExecuteFill(fill.OrderId, fill.ExpiresIn, fill.Art, cancelledAt)
 					if err != nil {
 						log.Error(err)
 					}
