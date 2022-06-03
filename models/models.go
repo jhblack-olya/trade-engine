@@ -342,7 +342,7 @@ func (Order) TableName() string {
 }
 
 type OrderBookResponse struct {
-	Ask      map[string]decimal.Decimal `json:"ask"`
-	Bid      map[string]decimal.Decimal `json:"bid"`
-	UsdSpace decimal.Decimal            `json:"usd_space"`
+	Ask      []map[string]decimal.Decimal `json:"ask"`
+	Bid      []map[string]decimal.Decimal `json:"bid"`
+	UsdSpace decimal.Decimal              `json:"usd_spread"`
 }

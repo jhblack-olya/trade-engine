@@ -189,11 +189,19 @@ func GetLiveOrderBook(ctx *gin.Context) {
 				if val > 0 {
 					fmt.Println("Trigger value ", val)
 					ask, bid, usdSpace := standalone.GetOrderBook(product, val)
-					resp := models.OrderBookResponse{
-						Ask:      ask,
-						Bid:      bid,
-						UsdSpace: usdSpace,
+					resp := models.OrderBookResponse{}
+					resp.UsdSpace = usdSpace
+					for key, val := range ask {
+						mp := make(map[string]decimal.Decimal)
+						mp[key] = val
+						resp.Ask = append(resp.Ask, mp)
 					}
+					for key, val := range bid {
+						mp := make(map[string]decimal.Decimal)
+						mp[key] = val
+						resp.Bid = append(resp.Bid, mp)
+					}
+
 					if conn, ok := ClientConn[val]; ok {
 						err := conn.Ws.WriteJSON(&resp)
 						if err != nil {
