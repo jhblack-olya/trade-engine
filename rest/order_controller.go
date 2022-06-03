@@ -153,10 +153,15 @@ type WebsocketClient struct {
 	CloseChan chan bool
 }
 
-var ClientConn map[int64]*WebsocketClient
+var ClientConn map[int64]map[int64]*WebsocketClient
 
 func GetLiveOrderBook(ctx *gin.Context) {
 	art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, newMessageVo(err))
+
+	}
+	userId, err := strconv.ParseInt(ctx.Query("user"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusForbidden, newMessageVo(err))
 
@@ -171,13 +176,15 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		log.Println("error get connection")
 		log.Fatal(err)
 	}
-	ClientConn = make(map[int64]*WebsocketClient)
+	userClient := make(map[int64]*WebsocketClient)
+	ClientConn = make(map[int64]map[int64]*WebsocketClient)
 	wsClient := &WebsocketClient{
 		Ws:        ws,
 		CloseChan: make(chan bool),
 	}
 	if status == "open" {
-		ClientConn[art] = wsClient
+		userClient[userId] = wsClient
+		ClientConn[art] = userClient
 		fmt.Println("\n\nCreated clientConn")
 		models.Trigger = make(chan int64, 10)
 		models.Trigger <- art
@@ -203,9 +210,11 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					}
 
 					if conn, ok := ClientConn[val]; ok {
-						err := conn.Ws.WriteJSON(&resp)
-						if err != nil {
-							log.Println("error write json: " + err.Error())
+						if userConn, ok := conn[userId]; ok {
+							err := userConn.Ws.WriteJSON(&resp)
+							if err != nil {
+								log.Println("error write json: " + err.Error())
+							}
 						}
 					}
 				} else {
@@ -213,10 +222,12 @@ func GetLiveOrderBook(ctx *gin.Context) {
 				}
 			case <-wsClient.CloseChan:
 				if conn, ok := ClientConn[art]; ok {
-					conn.Ws.Close()
-					delete(ClientConn, art)
-					close(models.Trigger)
-					break
+					if userConn, ok := conn[userId]; ok {
+						userConn.Ws.Close()
+						delete(ClientConn[art], userId)
+						close(models.Trigger)
+						break
+					}
 				}
 			}
 		}
@@ -229,7 +240,14 @@ func CloseWebsocket(ctx *gin.Context) {
 		ctx.JSON(http.StatusForbidden, newMessageVo(err))
 
 	}
+	userId, err := strconv.ParseInt(ctx.Query("user"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, newMessageVo(err))
+
+	}
 	if conn, ok := ClientConn[art]; ok {
-		conn.CloseChan <- true
+		if userConn, ok := conn[userId]; ok {
+			userConn.CloseChan <- true
+		}
 	}
 }
