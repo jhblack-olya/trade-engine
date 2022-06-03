@@ -19,6 +19,7 @@ var CommonError map[string]string
 var RedisErrCh chan error
 var MysqlErrCh chan error
 var KafkaErrCh chan error
+var Trigger chan int64
 
 func NewSideFromString(s string) (*Side, error) {
 	side := Side(s)
@@ -338,4 +339,10 @@ type Tabler interface {
 
 func (Order) TableName() string {
 	return "OrderBooks"
+}
+
+type OrderBookResponse struct {
+	Ask      map[string]decimal.Decimal `json:"ask"`
+	Bid      map[string]decimal.Decimal `json:"bid"`
+	UsdSpace decimal.Decimal            `json:"usd_space"`
 }

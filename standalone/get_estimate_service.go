@@ -22,3 +22,11 @@ func GetEstimate(productId string, size decimal.Decimal, art int64, side models.
 
 	return e.GetLimitOrders(side, art, size)
 }
+
+func GetOrderBook(productId string, art int64) (map[string]decimal.Decimal, map[string]decimal.Decimal, decimal.Decimal) {
+	e, ok := matching.MatchEngine[productId]
+	if !ok {
+		return nil, nil, decimal.Zero
+	}
+	return e.LiveOrderBook(art)
+}

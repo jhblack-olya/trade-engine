@@ -9,12 +9,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/segmentio/kafka-go"
 	"github.com/shopspring/decimal"
 	"gitlab.com/gae4/trade-engine/conf"
@@ -136,4 +138,90 @@ func EstimateAmount(ctx *gin.Context) {
 		DepthSize:        sizeSum,
 	}
 	ctx.JSON(http.StatusOK, resp)
+}
+
+var UpGrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+type WebsocketClient struct {
+	Ws        *websocket.Conn
+	CloseChan chan bool
+}
+
+var ClientConn map[int64]*WebsocketClient
+
+func GetLiveOrderBook(ctx *gin.Context) {
+	art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, newMessageVo(err))
+
+	}
+	product := ctx.Query("product")
+	if product == "" {
+		product = "ABT-USDT"
+	}
+	status := ctx.Query("status")
+	ws, err := UpGrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		log.Println("error get connection")
+		log.Fatal(err)
+	}
+	ClientConn = make(map[int64]*WebsocketClient)
+	wsClient := &WebsocketClient{
+		Ws:        ws,
+		CloseChan: make(chan bool),
+	}
+	if status == "open" {
+		ClientConn[art] = wsClient
+		fmt.Println("\n\nCreated clientConn")
+		models.Trigger = make(chan int64, 10)
+		models.Trigger <- art
+	}
+	go func() {
+		for {
+			select {
+			case val := <-models.Trigger:
+				if val > 0 {
+					fmt.Println("Trigger value ", val)
+					ask, bid, usdSpace := standalone.GetOrderBook(product, val)
+					resp := models.OrderBookResponse{
+						Ask:      ask,
+						Bid:      bid,
+						UsdSpace: usdSpace,
+					}
+					if conn, ok := ClientConn[val]; ok {
+						err := conn.Ws.WriteJSON(&resp)
+						if err != nil {
+							log.Println("error write json: " + err.Error())
+						}
+					}
+				} else {
+					break
+				}
+			case <-wsClient.CloseChan:
+				if conn, ok := ClientConn[art]; ok {
+					conn.Ws.Close()
+					delete(ClientConn, art)
+					close(models.Trigger)
+					break
+				}
+			}
+		}
+	}()
+}
+
+func CloseWebsocket(ctx *gin.Context) {
+	art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, newMessageVo(err))
+
+	}
+	if conn, ok := ClientConn[art]; ok {
+		conn.CloseChan <- true
+	}
 }

@@ -262,8 +262,11 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 				o.Order.UpdatedAt = time.Now()
 				o.Order.ExpiresIn = 0
 				logger.Info("Order ", o.Order.Id, " expired")
+
 				e.SubmitOrder(o.Order)
 				flag = 1
+				models.Trigger <- o.Order.Art
+
 			} else {
 				//	fmt.Println("order ", o.Order.Id, " expires in ", expiresIn)
 				status := d.UpdateDepth(o.Order.Id, expiresIn)
@@ -323,5 +326,77 @@ func (e *Engine) GetLimitOrders(side models.Side, art int64, size decimal.Decima
 
 	}
 	return estimateAmt, mostAvailableAmt, sizeSum
+
+}
+
+func (e *Engine) LiveOrderBook(art int64) (map[string]decimal.Decimal, map[string]decimal.Decimal, decimal.Decimal) {
+	var (
+		bidMaxPrice decimal.Decimal
+		askMinPrice decimal.Decimal
+		usdSpace    decimal.Decimal
+		askDepth    map[string]decimal.Decimal
+		bidDepth    map[string]decimal.Decimal
+	)
+
+	flag := 0
+	askOrders := e.OrderBook.artDepths[art][models.SideSell]
+	bidOrders := e.OrderBook.artDepths[art][models.SideBuy]
+
+	if askOrders != nil {
+		fmt.Println("ask block")
+		askDepth = make(map[string]decimal.Decimal)
+		for itr := askOrders.queue.Iterator(); itr.Next(); {
+			orders := askOrders.orders[itr.Value().(int64)]
+			fmt.Println("price ", orders.Price, " size ", orders.Size)
+			if flag == 0 {
+				askMinPrice = orders.Price
+				flag = 1
+			}
+			if val, ok := askDepth[orders.Price.String()]; ok {
+				//delete(askDepth, orders.Price)
+				askDepth[orders.Price.String()] = val.Add(orders.Size)
+			} else {
+				askDepth[orders.Price.String()] = orders.Size
+			}
+		}
+	}
+
+	flag1 := 0
+	if bidOrders != nil {
+		fmt.Println("bid block")
+
+		bidSizeSum := decimal.Zero
+		bidDepth = make(map[string]decimal.Decimal)
+
+		for itr := bidOrders.queue.Iterator(); itr.Next(); {
+			orders := bidOrders.orders[itr.Value().(int64)]
+			fmt.Println("price ", orders.Price, " size ", orders.Size)
+			bidSizeSum = orders.Size.Add(bidSizeSum)
+			if flag1 == 0 {
+				bidMaxPrice = orders.Price
+				flag1 = 1
+			}
+			if val, ok := bidDepth[orders.Price.String()]; ok {
+				//delete(bidDepth, orders.Price)
+				bidDepth[orders.Price.String()] = val.Add(orders.Size)
+			} else {
+				bidDepth[orders.Price.String()] = orders.Size
+			}
+		}
+	}
+	if bidOrders == nil && askOrders != nil {
+		fmt.Println("block 1")
+		return askDepth, nil, askMinPrice
+	} else if bidOrders != nil && askOrders == nil {
+		fmt.Println("block 2")
+		return nil, bidDepth, bidMaxPrice
+	} else if bidOrders == nil && askOrders == nil {
+		fmt.Println("block 3")
+		return nil, nil, decimal.Zero
+	}
+	fmt.Println("bids ", bidDepth)
+	fmt.Println("ask ", askDepth)
+	usdSpace = bidMaxPrice.Sub(askMinPrice)
+	return askDepth, bidDepth, usdSpace
 
 }

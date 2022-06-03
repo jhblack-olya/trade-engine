@@ -21,6 +21,12 @@ const (
 	orderIdWindowCap = 10000
 )
 
+type evaluated struct {
+	MakerOrderId int64
+	TakerOrderId int64
+	Price        decimal.Decimal
+	EvaluatedAt  string
+}
 type orderBook struct {
 	// one product corresponds to one order book
 	product *models.Product
@@ -38,7 +44,7 @@ type orderBook struct {
 	// a sliding window de duplication strategy is adopted.
 	orderIdWindow  Window
 	DanglingOrders []*models.Order
-	ArtTraded      map[int64]decimal.Decimal
+	ArtTraded      map[int64]evaluated
 	artDepths      map[int64]map[models.Side]*depth
 }
 
@@ -104,6 +110,9 @@ func newBookOrder(order *models.Order) *BookOrder {
 func (d *depth) add(order BookOrder) {
 	d.orders[order.OrderId] = &order
 	d.queue.Put(&priceOrderIdKey{order.Price, order.OrderId}, order.OrderId)
+	if models.Trigger != nil {
+		models.Trigger <- order.Art
+	}
 }
 
 func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
@@ -120,6 +129,9 @@ func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
 	if order.Size.IsZero() {
 		delete(d.orders, orderId)
 		d.queue.Remove(&priceOrderIdKey{order.Price, order.OrderId})
+	}
+	if models.Trigger != nil {
+		models.Trigger <- order.Art
 	}
 	return nil
 }
@@ -239,7 +251,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		takermatchedAt = makermatchedAt
 		matchLog := newMatchLog(o.nextLogSeq(), o.product.Id, o.nextTradeSeq(), takerOrder, makerOrder, price, size, takerOrder.ExpiresIn, makerOrder.ExpiresIn, takerOrder.Art, makerOrder.Art, takermatchedAt, makermatchedAt)
 		logs = append(logs, matchLog)
-		o.ArtTraded[makerOrder.Art] = price
+		o.ArtTraded[makerOrder.Art] = evaluated{Price: price, EvaluatedAt: makermatchedAt, MakerOrderId: makerOrder.OrderId, TakerOrderId: takerOrder.OrderId}
 		log.Info("Last traded price ", o.ArtTraded)
 		// maker is filled
 		if makerOrder.Size.IsZero() {
@@ -255,6 +267,8 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		//so it will be added to order book and set next log sequence in order to execute this order in future
 		//o.depths[takerOrder.Side].add(*takerOrder)
 		o.artDepths[takerOrder.Art][takerOrder.Side].add(*takerOrder)
+		//	models.Trigger = make(chan int64)
+		//models.Trigger <- takerOrder.Art
 		openLog := newOpenLog(o.nextLogSeq(), o.product.Id, takerOrder, takerOrder.ExpiresIn, takerOrder.Art)
 		logs = append(logs, openLog)
 	} else {
@@ -297,6 +311,8 @@ func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 	}
 
 	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn, order.Art, decimal.Zero, decimal.Zero, cancelledAt)
+	//models.Trigger = make(chan int64)
+	//models.Trigger <- order.Art
 	return append(logs, doneLog)
 }
 
@@ -388,7 +404,6 @@ func (o *orderBook) Restore(snapshot *orderBookSnapshot) {
 			}
 			o.DanglingOrders = append(o.DanglingOrders, danglingOrder)
 		}
-
 	}
 }
 
@@ -435,7 +450,7 @@ func NewOrderBook(product *models.Product) *orderBook {
 	orderBook := &orderBook{
 		product:       product,
 		orderIdWindow: newWindow(0, orderIdWindowCap),
-		ArtTraded:     make(map[int64]decimal.Decimal),
+		ArtTraded:     make(map[int64]evaluated),
 		artDepths:     make(map[int64]map[models.Side]*depth),
 	}
 	return orderBook
