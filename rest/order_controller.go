@@ -176,25 +176,33 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		log.Println("error get connection")
 		log.Fatal(err)
 	}
-	userClient := make(map[int64]*WebsocketClient)
-	ClientConn = make(map[int64]map[int64]*WebsocketClient)
-	wsClient := &WebsocketClient{
-		Ws:        ws,
-		CloseChan: make(chan bool),
-	}
 	if status == "open" {
-		userClient[userId] = wsClient
-		ClientConn[art] = userClient
-		fmt.Println("\n\nCreated clientConn")
-		models.Trigger = make(chan int64, 10)
+		//userClient[userId] = wsClient
+		if userConn, ok := ClientConn[art]; ok {
+			if _, ok1 := userConn[userId]; !ok1 {
+				userConn[userId] = &WebsocketClient{
+					Ws:        ws,
+					CloseChan: make(chan bool),
+				}
+			}
+		} else {
+			ClientConn[art] = make(map[int64]*WebsocketClient)
+			userClient := make(map[int64]*WebsocketClient)
+			userClient[userId] = &WebsocketClient{
+				Ws:        ws,
+				CloseChan: make(chan bool),
+			}
+			ClientConn[art] = userClient
+		}
+		models.Trigger = make(chan int64, 1)
 		models.Trigger <- art
+
 	}
 	go func() {
 		for {
 			select {
 			case val := <-models.Trigger:
 				if val > 0 {
-					fmt.Println("Trigger value ", val)
 					ask, bid, usdSpace := standalone.GetOrderBook(product, val)
 					resp := models.OrderBookResponse{}
 					resp.UsdSpace = usdSpace
@@ -208,30 +216,32 @@ func GetLiveOrderBook(ctx *gin.Context) {
 						mp[key] = val
 						resp.Bid = append(resp.Bid, mp)
 					}
-
 					if conn, ok := ClientConn[val]; ok {
-						if userConn, ok := conn[userId]; ok {
+						for _, userConn := range conn {
 							err := userConn.Ws.WriteJSON(&resp)
 							if err != nil {
 								log.Println("error write json: " + err.Error())
 							}
 						}
+
 					}
 				} else {
 					break
 				}
-			case <-wsClient.CloseChan:
+			case <-ClientConn[art][userId].CloseChan:
 				if conn, ok := ClientConn[art]; ok {
 					if userConn, ok := conn[userId]; ok {
 						userConn.Ws.Close()
 						delete(ClientConn[art], userId)
-						close(models.Trigger)
+						close(models.UserChan[userId])
+						delete(models.UserChan, userId)
 						break
 					}
 				}
 			}
 		}
 	}()
+
 }
 
 func CloseWebsocket(ctx *gin.Context) {

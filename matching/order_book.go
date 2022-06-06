@@ -81,6 +81,7 @@ type BookOrder struct {
 	ExpiresIn      int64
 	BackendOrderId string
 	Art            int64
+	UserId         int64
 }
 
 func (o *orderBook) nextLogSeq() int64 {
@@ -104,6 +105,7 @@ func newBookOrder(order *models.Order) *BookOrder {
 		ExpiresIn:      order.ExpiresIn,
 		BackendOrderId: order.BackendOrderId,
 		Art:            order.Art,
+		UserId:         order.UserId,
 	}
 }
 
@@ -113,6 +115,7 @@ func (d *depth) add(order BookOrder) {
 	if models.Trigger != nil {
 		models.Trigger <- order.Art
 	}
+
 }
 
 func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
@@ -130,6 +133,7 @@ func (d *depth) decrSize(orderId int64, size decimal.Decimal) error {
 		delete(d.orders, orderId)
 		d.queue.Remove(&priceOrderIdKey{order.Price, order.OrderId})
 	}
+
 	if models.Trigger != nil {
 		models.Trigger <- order.Art
 	}
@@ -257,7 +261,11 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		if makerOrder.Size.IsZero() {
 			doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Size, models.DoneReasonFilled, makerOrder.ExpiresIn, makerOrder.Art, decimal.Zero, decimal.Zero, makermatchedAt)
 			logs = append(logs, doneLog)
-		}
+		} /*else {
+			pendingLog := newPendingLog(o.nextLogSeq(), o.product.Id, makerOrder, makerOrder.Art)
+			logs = append(logs, pendingLog)
+
+		}*/
 	}
 	//If pogram controller break out of loop
 	//check if taker is of type limit and commodity to be trade is greater than 0
@@ -286,6 +294,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 				(takerOrder.Side == models.SideBuy && takerOrder.Funds.GreaterThan(decimal.Zero)) {
 				takermatchedAt = time.Now().Format("2006-01-02 15:04:05")
 				reason = models.DoneReasonCancelled
+				//newPendingLog(o.nextLogSeq(), o.product.Id, nil, remainingSize)
 			}
 		}
 		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason, takerOrder.ExpiresIn, takerOrder.Art, executedValue, filledSize, takermatchedAt)
@@ -309,10 +318,11 @@ func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 	if err != nil {
 		panic(err)
 	}
-
+	if remainingSize.GreaterThan(decimal.Zero) {
+		pendingLog := newPendingLog(o.nextLogSeq(), o.product.Id, order.Side, remainingSize, order.Id, order.Type, order.Art)
+		logs = append(logs, pendingLog)
+	}
 	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn, order.Art, decimal.Zero, decimal.Zero, cancelledAt)
-	//models.Trigger = make(chan int64)
-	//models.Trigger <- order.Art
 	return append(logs, doneLog)
 }
 

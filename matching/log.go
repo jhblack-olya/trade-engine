@@ -15,9 +15,10 @@ import (
 type LogType string
 
 const (
-	LogTypeMatch = LogType("match")
-	LogTypeOpen  = LogType("open")
-	LogTypeDone  = LogType("done")
+	LogTypeMatch   = LogType("match")
+	LogTypeOpen    = LogType("open")
+	LogTypeDone    = LogType("done")
+	LogTypePending = LogType("pending")
 )
 
 type Log interface {
@@ -76,6 +77,15 @@ type MatchLog struct {
 	MakerArt            int64
 	TakerExecutedAt     string
 	MakerExecutedAt     string
+}
+
+type PendingLog struct {
+	Base
+	OrderId       int64
+	OrderType     int64
+	Art           int64
+	RemainingSize decimal.Decimal
+	Side          models.Side
 }
 
 func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64, takerArt, makerArt int64, takerMatchedAt, makermatchedAt string) *MatchLog {
@@ -140,6 +150,17 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 	}
 }
 
+func newPendingLog(logSeq int64, productId string, side models.Side, remainingSize decimal.Decimal, orderId, orderType, art int64) *PendingLog {
+	return &PendingLog{
+		Base:          Base{LogTypePending, logSeq, productId, time.Now()},
+		OrderId:       orderId,
+		RemainingSize: remainingSize,
+		Side:          side,
+		Art:           art,
+		OrderType:     orderType,
+	}
+}
+
 func (l *OpenLog) GetSeq() int64 {
 	return l.Sequence
 }
@@ -149,5 +170,9 @@ func (l *DoneLog) GetSeq() int64 {
 }
 
 func (l *MatchLog) GetSeq() int64 {
+	return l.Sequence
+}
+
+func (l *PendingLog) GetSeq() int64 {
 	return l.Sequence
 }

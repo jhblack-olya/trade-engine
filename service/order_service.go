@@ -146,7 +146,6 @@ func ExecuteFill(orderId, timer int64, art int64, cancelledAt string) error {
 
 	var bills []*models.Bill
 	for _, fill := range fills {
-		fmt.Println("*****************\nfill executedAt value \n", fill.ExecutedAt, "****************\n")
 		fill.Settled = true
 		notes := fmt.Sprintf("%v-%v", fill.OrderId, fill.Id)
 

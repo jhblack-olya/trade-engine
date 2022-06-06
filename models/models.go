@@ -20,6 +20,7 @@ var RedisErrCh chan error
 var MysqlErrCh chan error
 var KafkaErrCh chan error
 var Trigger chan int64
+var UserChan map[int64]chan int64
 
 func NewSideFromString(s string) (*Side, error) {
 	side := Side(s)
@@ -308,29 +309,30 @@ type EstimateValue struct {
 }
 
 type Order struct {
-	Id             int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	ProductId      string
-	UserId         int64 `gorm:"column:user"`
-	ClientOid      string
-	Size           decimal.Decimal `gorm:"column:artBits" sql:"type:decimal(32,16);"`
-	Funds          decimal.Decimal `gorm:"column:totalAmount" sql:"type:decimal(32,16);"`
-	FilledSize     decimal.Decimal `gorm:"column:filledArtBits" sql:"type:decimal(32,16);"`
-	ExecutedValue  decimal.Decimal `gorm:"column:filledAmount" sql:"type:decimal(32,16);"`
-	Price          decimal.Decimal `sql:"type:decimal(32,16);"`
-	FillFees       decimal.Decimal `gorm:"column:commission" sql:"type:decimal(32,16);"`
-	Type           int64           `gorm:"column:orderType"`
-	Side           Side
-	Status         OrderStatus
-	ExpiresIn      int64
-	BackendOrderId string     `gorm:"column:orderId"`
-	Art            int64      `gorm:"column:art"`
-	CancelledAt    *time.Time `gorm:"column:cancelledAt;default:null"`
-	ExecutedAt     *time.Time `gorm:"column:executedAt;default:null"`
-	DeletedAt      *time.Time `gorm:"column:deletedAt;default:null"`
-	UserRole       int64      `gorm:"column:userRole"`
-	Settled        bool
+	Id                int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	ProductId         string
+	UserId            int64 `gorm:"column:user"`
+	ClientOid         string
+	Size              decimal.Decimal `gorm:"column:artBits" sql:"type:decimal(32,16);"`
+	Funds             decimal.Decimal `gorm:"column:totalAmount" sql:"type:decimal(32,16);"`
+	FilledSize        decimal.Decimal `gorm:"column:filledArtBits" sql:"type:decimal(32,16);"`
+	ExecutedValue     decimal.Decimal `gorm:"column:filledAmount" sql:"type:decimal(32,16);"`
+	Price             decimal.Decimal `sql:"type:decimal(32,16);"`
+	FillFees          decimal.Decimal `gorm:"column:commission" sql:"type:decimal(32,16);"`
+	Type              int64           `gorm:"column:orderType"`
+	Side              Side
+	Status            OrderStatus
+	ExpiresIn         int64
+	BackendOrderId    string     `gorm:"column:orderId"`
+	Art               int64      `gorm:"column:art"`
+	CancelledAt       *time.Time `gorm:"column:cancelledAt;default:null"`
+	ExecutedAt        *time.Time `gorm:"column:executedAt;default:null"`
+	DeletedAt         *time.Time `gorm:"column:deletedAt;default:null"`
+	UserRole          int64      `gorm:"column:userRole"`
+	Settled           bool
+	CommissionPercent decimal.Decimal `gorm:"column:commissionPercent"`
 }
 
 type Tabler interface {

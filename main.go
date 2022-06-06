@@ -29,6 +29,7 @@ func main() {
 	models.RedisErrCh = make(chan error, 10)
 	models.MysqlErrCh = make(chan error, 10)
 	models.KafkaErrCh = make(chan error, 10)
+	rest.ClientConn = make(map[int64]map[int64]*rest.WebsocketClient)
 	go func() {
 		for {
 			select {

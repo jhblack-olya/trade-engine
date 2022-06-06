@@ -143,6 +143,8 @@ func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest inte
 				col = "deletedAt"
 			case "UserRole":
 				col = "userRole"
+			case "CommissionPercent":
+				col = "commissionPercent"
 			default:
 				col = utils.SnakeCase(colName)
 			}
