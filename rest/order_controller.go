@@ -8,7 +8,6 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -22,6 +21,7 @@ import (
 	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/gae4/trade-engine/models/mysql"
 	"gitlab.com/gae4/trade-engine/service"
 	"gitlab.com/gae4/trade-engine/standalone"
 )
@@ -34,39 +34,54 @@ func PlaceOrderAPI(ctx *gin.Context) {
 		return
 	}
 
-	side := models.Side(req.Side)
-	if len(side) == 0 {
-		side = models.SideBuy
-	}
+	order := &models.Order{}
+	if req.Status != models.OrderStatusCancelling.String() {
+		side := models.Side(req.Side)
+		if len(side) == 0 {
+			side = models.SideBuy
+		}
 
-	orderType := models.OrderType(req.Type)
-	if len(orderType) == 0 {
-		orderType = models.OrderTypeLimit
-	}
+		orderType := models.OrderType(req.Type)
+		if len(orderType) == 0 {
+			orderType = models.OrderTypeLimit
+		}
 
-	if len(req.ClientOid) > 0 {
-		_, err = uuid.Parse(req.ClientOid)
+		if len(req.ClientOid) > 0 {
+			_, err := uuid.Parse(req.ClientOid)
+			if err != nil {
+				return
+			}
+		}
+		size := decimal.NewFromFloat(req.Size)
+		price := decimal.NewFromFloat(req.Price)
+		funds := decimal.NewFromFloat(req.Funds)
+		commission := decimal.NewFromFloat(req.Commission)
+		commissionPercent := decimal.NewFromFloat(req.CommissionPercent)
+		order, err = service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
+			side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art, commission, commissionPercent)
+
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, newMessageVo(fmt.Errorf("invalid client_oid: %v", err)))
+			ctx.JSON(http.StatusBadRequest, err.Error())
+
+		}
+	} else {
+		db := mysql.SharedStore()
+		order, err = db.GetOrderById(req.OrderId)
+		if err != nil {
+			log.Println("get order error ", err.Error())
+			ctx.JSON(http.StatusNotFound, err.Error())
+
 			return
 		}
+		if order.Status != models.OrderStatusOpen {
+			ctx.JSON(http.StatusForbidden, "not allowed")
+
+			return
+		}
+		order.Status = models.OrderStatusCancelling
+
 	}
-
-	size := decimal.NewFromFloat(req.Size)
-	price := decimal.NewFromFloat(req.Price)
-	funds := decimal.NewFromFloat(req.Funds)
-	commission := decimal.NewFromFloat(req.Commission)
-	commissionPercent := decimal.NewFromFloat(req.CommissionPercent)
-	order, err := service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-		side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art, commission, commissionPercent)
-
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, newMessageVo(err))
-		return
-	}
-
 	matching.SubmitOrder(order)
-
 	ctx.JSON(http.StatusOK, order)
 }
 
