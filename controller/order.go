@@ -67,7 +67,6 @@ func (b *BackendOrder) PlaceOrder(req *models.PlaceOrderRequest) {
 	order := &models.Order{}
 	var err error
 	if req.Status != models.OrderStatusCancelling.String() {
-
 		side := models.Side(req.Side)
 		if len(side) == 0 {
 			side = models.SideBuy
@@ -87,8 +86,10 @@ func (b *BackendOrder) PlaceOrder(req *models.PlaceOrderRequest) {
 		size := decimal.NewFromFloat(req.Size)
 		price := decimal.NewFromFloat(req.Price)
 		funds := decimal.NewFromFloat(req.Funds)
+		commission := decimal.NewFromFloat(req.Commission)
+		commissionPercent := decimal.NewFromFloat(req.CommissionPercent)
 		order, err = service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-			side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art)
+			side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art, commission, commissionPercent)
 
 		if err != nil {
 			return

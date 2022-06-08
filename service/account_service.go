@@ -75,7 +75,7 @@ func ExecuteBill(userId int64, currency string) error {
 
 	return nil
 }
-func HoldBalance(db models.Store, userId int64, currency string, size decimal.Decimal, billType models.BillType) error {
+func HoldBalance(db models.Store, userId int64, currency string, size decimal.Decimal, billType models.BillType, commission decimal.Decimal, quoteCurrency string) error {
 	if size.LessThanOrEqual(decimal.Zero) {
 		err := errors.New("size less than 0")
 		log.Errorln(err.Error())
@@ -89,6 +89,17 @@ func HoldBalance(db models.Store, userId int64, currency string, size decimal.De
 
 	if !enough {
 		err := errors.New(fmt.Sprintf("no enough %v : request=%v", currency, size))
+		log.Errorln(err.Error())
+		return err
+	}
+	//is commission amount available
+	enough, err = HasEnoughBalance(userId, quoteCurrency, commission)
+	if err != nil {
+		return err
+	}
+
+	if !enough {
+		err := errors.New(fmt.Sprintf("no enough %v : request=%v", quoteCurrency, commission))
 		log.Errorln(err.Error())
 		return err
 	}
@@ -130,6 +141,25 @@ func HoldBalance(db models.Store, userId int64, currency string, size decimal.De
 		return err
 	}
 
+	account, err = db.GetAccountForUpdate(userId, quoteCurrency)
+	if err != nil {
+		log.Errorln(err.Error())
+		return err
+	}
+
+	if account == nil {
+		err := errors.New("no enough commission amount to hold")
+		log.Errorln(err.Error())
+		return err
+	}
+
+	account.Available = account.Available.Sub(commission)
+	account.Hold = account.Hold.Add(commission)
+	err = db.UpdateAccount(account)
+	if err != nil {
+		log.Errorln(err.Error())
+		return err
+	}
 	return nil
 }
 

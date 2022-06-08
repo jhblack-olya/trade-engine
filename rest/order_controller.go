@@ -55,9 +55,10 @@ func PlaceOrderAPI(ctx *gin.Context) {
 	size := decimal.NewFromFloat(req.Size)
 	price := decimal.NewFromFloat(req.Price)
 	funds := decimal.NewFromFloat(req.Funds)
-
+	commission := decimal.NewFromFloat(req.Commission)
+	commissionPercent := decimal.NewFromFloat(req.CommissionPercent)
 	order, err := service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-		side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art)
+		side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art, commission, commissionPercent)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, newMessageVo(err))

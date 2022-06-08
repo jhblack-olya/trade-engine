@@ -19,7 +19,7 @@ import (
 
 //PlaceOrder: adds order and bills to tables and pass order to matching engine
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
-	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string, art int64) (*models.Order, error) {
+	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string, art int64, commission, commissionPercent decimal.Decimal) (*models.Order, error) {
 	product, err := GetProductById(productId)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,6 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	if product == nil {
 		return nil, errors.New(fmt.Sprintf("product not found: %v", productId))
 	}
-
 	if orderType == models.OrderTypeLimit {
 		size = size.Round(product.BaseScale)
 		if size.LessThan(product.BaseMinSize) {
@@ -39,7 +38,6 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 			return nil, fmt.Errorf("price %v less than 0", price)
 		}
 		funds = size.Mul(price)
-
 	} else if orderType == models.OrderTypeMarket {
 		if side == models.SideBuy {
 			size = decimal.Zero
@@ -48,6 +46,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 			if funds.LessThan(product.QuoteMinSize) {
 				return nil, fmt.Errorf("funds %v less than quote min size %v", funds, product.QuoteMinSize)
 			}
+
 		} else {
 			size = size.Round(product.BaseScale)
 			if size.LessThan(product.BaseMinSize) {
@@ -85,9 +84,9 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		ExpiresIn:      expiresIn,
 		BackendOrderId: backendOrderId,
 		//	ArtName:        int64(artInt),
-		//	CommissionPercent: commissionPercent,
-		//	FillFees:          commission,
-		Art: art,
+		CommissionPercent: commissionPercent,
+		FillFees:          commission,
+		Art:               art,
 	}
 
 	db, err := mysql.SharedStore().BeginTx()
@@ -96,7 +95,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	}
 	defer func() { _ = db.Rollback() }()
 
-	err = HoldBalance(db, userId, holdCurrency, holdSize, models.BillTypeTrade)
+	err = HoldBalance(db, userId, holdCurrency, holdSize, models.BillTypeTrade, commission, product.QuoteCurrency)
 	if err != nil {
 		return nil, err
 	}
