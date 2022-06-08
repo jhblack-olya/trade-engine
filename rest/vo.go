@@ -18,18 +18,22 @@ func newMessageVo(error error) *messageVo {
 }
 
 type placeOrderRequest struct {
-	ClientOid      string  `json:"client_oid"`
-	ProductId      string  `json:"productId"`
-	UserId         int64   `json:"userId"`
-	Size           float64 `json:"size"`
-	Funds          float64 `json:"funds"`
-	Price          float64 `json:"price"`
-	Side           string  `json:"side"`
-	Type           string  `json:"type"`        // [optional] limit or market (default is limit)
-	TimeInForce    string  `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
-	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except market-order
-	BackendOrderId string  `json:"backendOrderId"`
-	Art            int64   `json:"art_name"`
+	ClientOid         string          `json:"client_oid"`
+	ProductId         string          `json:"productId"`
+	UserId            int64           `json:"userId"`
+	Size              float64         `json:"size"`
+	Funds             float64         `json:"funds"`
+	Price             float64         `json:"price"`
+	Side              string          `json:"side"`
+	Type              string          `json:"type"`        // [optional] limit or market (default is limit)
+	TimeInForce       string          `json:"timeInForce"` // [optional] GTC, GTT, IOC, or FOK (default is GTC)
+	ExpiresIn         int64           `json:"expiresIn"`   // [optional] set expiresIn except market-order
+	BackendOrderId    string          `json:"backendOrderId"`
+	Art               int64           `json:"art_name"`
+	Status            string          `json:"status"`
+	OrderId           int64           `json:"order_id"`
+	Commission        decimal.Decimal `json:"commission"`
+	CommissionPercent decimal.Decimal `json:"commission_percent"`
 }
 
 type accountRequest struct {

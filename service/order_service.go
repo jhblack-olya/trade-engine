@@ -39,6 +39,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 			return nil, fmt.Errorf("price %v less than 0", price)
 		}
 		funds = size.Mul(price)
+
 	} else if orderType == models.OrderTypeMarket {
 		if side == models.SideBuy {
 			size = decimal.Zero
@@ -63,8 +64,10 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 
 	var holdCurrency string
 	var holdSize decimal.Decimal
+	//var holdCommission decimal.Decimal
 	if side == models.SideBuy {
 		holdCurrency, holdSize = product.QuoteCurrency, funds
+		//	holdCommission = holdSize.Add(holdSize.Mul(holdSize))
 	} else {
 		holdCurrency, holdSize = strconv.FormatInt(art, 10)+"_"+product.BaseCurrency, size
 	}
@@ -82,6 +85,8 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		ExpiresIn:      expiresIn,
 		BackendOrderId: backendOrderId,
 		//	ArtName:        int64(artInt),
+		//	CommissionPercent: commissionPercent,
+		//	FillFees:          commission,
 		Art: art,
 	}
 

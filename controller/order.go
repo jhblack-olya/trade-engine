@@ -5,12 +5,15 @@ To obtain a license write to legal@gax.llc
 package controller
 
 import (
+	"log"
+
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/gae4/trade-engine/models/mysql"
 	"gitlab.com/gae4/trade-engine/service"
 )
 
@@ -55,40 +58,53 @@ func (b *BackendOrder) runFetcher() {
 		if err != nil {
 			continue
 		}
-
+		log.Printf("Fetched order \n %+v", order)
 		b.PlaceOrder(order)
 	}
 }
 
 func (b *BackendOrder) PlaceOrder(req *models.PlaceOrderRequest) {
+	order := &models.Order{}
+	var err error
+	if req.Status != models.OrderStatusCancelling.String() {
 
-	side := models.Side(req.Side)
-	if len(side) == 0 {
-		side = models.SideBuy
-	}
+		side := models.Side(req.Side)
+		if len(side) == 0 {
+			side = models.SideBuy
+		}
 
-	orderType := models.OrderType(req.Type)
-	if len(orderType) == 0 {
-		orderType = models.OrderTypeLimit
-	}
+		orderType := models.OrderType(req.Type)
+		if len(orderType) == 0 {
+			orderType = models.OrderTypeLimit
+		}
 
-	if len(req.ClientOid) > 0 {
-		_, err := uuid.Parse(req.ClientOid)
+		if len(req.ClientOid) > 0 {
+			_, err := uuid.Parse(req.ClientOid)
+			if err != nil {
+				return
+			}
+		}
+		size := decimal.NewFromFloat(req.Size)
+		price := decimal.NewFromFloat(req.Price)
+		funds := decimal.NewFromFloat(req.Funds)
+		order, err = service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
+			side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art)
+
 		if err != nil {
 			return
 		}
+	} else {
+		db := mysql.SharedStore()
+		order, err = db.GetOrderById(req.OrderId)
+		if err != nil {
+			log.Println("get order error ", err.Error())
+			return
+		}
+		if order.Status != models.OrderStatusOpen {
+			return
+		}
+		order.Status = models.OrderStatusCancelling
+
 	}
-
-	size := decimal.NewFromFloat(req.Size)
-	price := decimal.NewFromFloat(req.Price)
-	funds := decimal.NewFromFloat(req.Funds)
-
-	order, err := service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-		side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art)
-
-	if err != nil {
-		return
-	}
-
 	matching.SubmitOrder(order)
 }

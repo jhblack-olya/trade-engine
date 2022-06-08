@@ -301,6 +301,8 @@ type PlaceOrderRequest struct {
 	ExpiresIn      int64   `json:"expiresIn"`   // [optional] set expiresIn except marker-order
 	BackendOrderId string  `json:"backendOrderId"`
 	Art            int64   `json:"art_name"`
+	Status         string  `json:"status"`
+	OrderId        int64   `json:"order_id"`
 }
 
 type EstimateValue struct {
