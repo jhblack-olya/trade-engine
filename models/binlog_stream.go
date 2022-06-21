@@ -41,7 +41,7 @@ func NewBinLogStream() *BinLogStream {
 
 func (s *BinLogStream) OnRow(e *canal.RowsEvent) error {
 	switch e.Table.Name {
-	case "g_order":
+	case "orderbooks": //"g_order":
 		if e.Action == "delete" {
 			return nil
 		}
@@ -102,7 +102,6 @@ func (s *BinLogStream) OnRow(e *canal.RowsEvent) error {
 		if ret.Err() != nil {
 			log.Error(ret.Err())
 		}
-
 	}
 
 	return nil
@@ -114,9 +113,50 @@ func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest inte
 	num := v.NumField()
 	for i := 0; i < num; i++ {
 		f := v.Field(i)
+		colName := t.Field(i).Name
+		col := colName
+		if e.Table.Name == "orderbooks" {
+			switch colName {
+			case "UserId":
+				col = "user"
+			case "ArtName":
+				col = "art"
+			case "BackendOrderId":
+				col = "orderId"
+			case "Size":
+				col = "artBits"
+			case "Funds":
+				col = "totalAmount"
+			case "FilledSize":
+				col = "filledArtBits"
+			case "ExecutedValue":
+				col = "filledAmount"
+			case "FillFees":
+				col = "commission"
+			case "Type":
+				col = "orderType"
+			case "CancelledAt":
+				col = "cancelledAt"
+			case "ExecutedAt":
+				col = "executedAt"
+			case "DeletedAt":
+				col = "deletedAt"
+			case "UserRole":
+				col = "userRole"
+			case "CommissionPercent":
+				col = "commissionPercent"
+			default:
+				col = utils.SnakeCase(colName)
+			}
+		} else {
+			col = utils.SnakeCase(colName)
 
-		colIdx := s.getColumnIndexByName(e, utils.SnakeCase(t.Field(i).Name))
-		if e.Table.Name == "g_fill" && /*(t.Field(i).Name == "ExpiresIn" || t.Field(i).Name == "ClientOid")*/ t.Field(i).Name == "ClientOid" {
+		}
+		colIdx := s.getColumnIndexByName(e, col)
+		if e.Table.Name == "g_fill" && t.Field(i).Name == "ClientOid" {
+			continue
+		}
+		if e.Table.Name == "orderbooks" && t.Field(i).Name == "CancelledAt" || t.Field(i).Name == "ExecutedAt" || t.Field(i).Name == "DeletedAt" {
 			continue
 		}
 		rowVal := row[colIdx]
@@ -125,7 +165,6 @@ func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest inte
 		case "int64":
 			f.SetInt(rowVal.(int64))
 		case "string":
-			// fmt.Println("rowVal", rowVal)
 			f.SetString(rowVal.(string))
 		case "bool":
 			if rowVal.(int8) == 0 {

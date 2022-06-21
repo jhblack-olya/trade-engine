@@ -20,6 +20,7 @@ type GbeConfig struct {
 	Kafka      KafkaConfig      `json:"kafka"`
 	PushServer PushServerConfig `json:"pushServer"`
 	RestServer RestServerConfig `json:"restServer"`
+	WSserver   WsServerConfig   `json:"wsServer"`
 	JwtSecret  string           `json:"jwtSecret"`
 	ApiKey     string           `json:"apiKey"`
 }
@@ -48,6 +49,10 @@ type PushServerConfig struct {
 }
 
 type RestServerConfig struct {
+	Addr string `json:"addr"`
+}
+
+type WsServerConfig struct {
 	Addr string `json:"addr"`
 }
 

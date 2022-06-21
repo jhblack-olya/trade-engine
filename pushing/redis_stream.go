@@ -56,6 +56,22 @@ func (s *redisStream) Start() {
 				continue
 			}
 
+			/*	ps1 := redisClient.Subscribe(models.TopicBill)
+				_, err = ps1.Receive()
+				if err != nil {
+					log.Error(err)
+					models.RedisErrCh <- err
+					continue
+				}
+
+				ps2 := redisClient.Subscribe(models.TopicFill)
+				_, err = ps2.Receive()
+				if err != nil {
+					log.Error(err)
+					models.RedisErrCh <- err
+					continue
+				}
+			*/
 			for {
 				select {
 				case msg := <-ps.Channel():
@@ -76,7 +92,7 @@ func (s *redisStream) Start() {
 						Funds:         "0",
 						ProductId:     order.ProductId,
 						Side:          order.Side.String(),
-						OrderType:     order.Type.String(),
+						OrderType:     order.Type,
 						CreatedAt:     order.CreatedAt.Format(time.RFC3339),
 						FillFees:      order.FillFees.String(),
 						FilledSize:    order.FilledSize.String(),

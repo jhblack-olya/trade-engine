@@ -1,8 +1,59 @@
+/*
+create table OrderBooks(
+id bigint(20) auto_increment primary key,
+product_id varchar(255),
+user bigint(20), 
+client_oid varchar(255),
+artBits decimal(32,16),
+totalAmount decimal(32,16),
+filledArtBits decimal(32,16),
+filledAmount decimal(32,16),
+price decimal(32,16),
+orderType int,
+side varchar(255),
+status varchar(255),
+expires_in int,
+orderId varchar(255),
+art int,
+cancelledAt timestamp NULL DEFAULT NULL,
+executedAt timestamp NULL DEFAULT NULL,
+deletedAt timestamp NULL DEFAULT NULL,
+created_at timestamp NULL DEFAULT NULL, 
+updated_at timestamp NULL DEFAULT NULL,
+commission decimal(32,16),
+userRole int,
+settled tinyint(1)
+);
+*/
 -- MySQL dump 10.13  Distrib 5.7.35, for Linux (x86_64)
 --
 -- Host: localhost    Database: gae
 -- ------------------------------------------------------
--- Server version	5.7.35-0ubuntu0.18.04.1
+-- Server version	5.7.35-0ubuntu0.18.04.1create table OrderBooks(
+id int auto_increment primary key,
+product_id int,
+user int, 
+client_oid varchar(255),
+artBits decimal(32,16),
+totalAmount decimal(32,16),
+filledArtBits decimal(32,16),
+filledAmount decimal(32,16),
+price decimal(32,16),
+orderType int,
+side varchar(255),
+status varchar(255),
+expires_in int,
+orderId varchar(255),
+art int,
+cancelledAt timestamp default CURRENT_TIMESTAMP not null,
+executedAt timestamp default CURRENT_TIMESTAMP not null,
+deletedAt timestamp default CURRENT_TIMESTAMP not null,
+created_at timestamp default CURRENT_TIMESTAMP not null, 
+updated_at timestamp default CURRENT_TIMESTAMP not null,
+commission decimal(32,16),
+userRole int,
+settled tinyint(1)
+);
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
