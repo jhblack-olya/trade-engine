@@ -41,7 +41,7 @@ func (server *HttpServer) Start() {
 
 	private := r.Group("/", checkAPIkey())
 	{
-		//	private.POST("/api/backendOrder", PlaceOrderAPI)
+		private.POST("/api/placeOrder", PlaceOrderAPI)
 		private.POST("/api/backendOrder", BackendOrder) //for testing purpose
 		private.POST("/api/account/create", CreateAccount)
 		private.PATCH("/api/account/update", UpdateAccount)

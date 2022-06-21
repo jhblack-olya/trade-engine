@@ -130,7 +130,10 @@ func BackendOrder(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, "Failed to place order")
 		return
 	}
+	if req.Status == string(models.OrderStatusCancelling) {
+		ctx.JSON(http.StatusOK, "Order cancel signal recieved")
 
+	}
 	ctx.JSON(http.StatusOK, "Order placed")
 }
 
