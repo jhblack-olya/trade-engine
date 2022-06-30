@@ -6,6 +6,8 @@ To obtain a license write to legal@gax.llc
 package main
 
 import (
+	"sync"
+
 	"github.com/prometheus/common/log"
 	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/controller"
@@ -30,6 +32,7 @@ func main() {
 	models.MysqlErrCh = make(chan error, 10)
 	models.KafkaErrCh = make(chan error, 10)
 	rest.ClientConn = make(map[int64]map[int64]*rest.WebsocketClient)
+	models.Mu = new(sync.Mutex)
 	go func() {
 		for {
 			select {
