@@ -7,6 +7,7 @@ package models
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -21,6 +22,7 @@ var MysqlErrCh chan error
 var KafkaErrCh chan error
 var Trigger chan int64
 var UserChan map[int64]chan int64
+var Mu *sync.Mutex
 
 func NewSideFromString(s string) (*Side, error) {
 	side := Side(s)
