@@ -104,7 +104,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	if err != nil {
 		return nil, err
 	}
-
+	order.BackendOrderId = strconv.FormatInt(order.Id, 10)
 	return order, db.CommitTx()
 }
 

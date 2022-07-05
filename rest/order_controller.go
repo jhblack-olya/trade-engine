@@ -232,17 +232,27 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					ask, bid, usdSpace := standalone.GetOrderBook(product, val)
 					resp := models.OrderBookResponse{}
 					resp.UsdSpace = usdSpace
+					i := 1
 					for key, val := range ask {
-						mp := make(map[string]decimal.Decimal)
-						mp[key] = val
+						record := models.Record{
+							Id:       i,
+							Price:    key,
+							Quantity: val,
+						}
 						totalAsk = totalAsk.Add(val)
-						resp.Ask = append(resp.Ask, mp)
+						resp.Ask = append(resp.Ask, record)
+						i++
 					}
+					i = 1
 					for key, val := range bid {
-						mp := make(map[string]decimal.Decimal)
-						mp[key] = val
+						record := models.Record{
+							Id:       i,
+							Price:    key,
+							Quantity: val,
+						}
 						totalBid = totalBid.Add(val)
-						resp.Bid = append(resp.Bid, mp)
+						resp.Bid = append(resp.Bid, record)
+						i++
 					}
 					resp.TotalASk = totalAsk
 					resp.TotalBid = totalBid
