@@ -353,4 +353,6 @@ type OrderBookResponse struct {
 	Ask      []map[string]decimal.Decimal `json:"ask"`
 	Bid      []map[string]decimal.Decimal `json:"bid"`
 	UsdSpace decimal.Decimal              `json:"usd_spread"`
+	TotalBid decimal.Decimal              `json:"total_bid"`
+	TotalASk decimal.Decimal              `json:"total_ask"`
 }

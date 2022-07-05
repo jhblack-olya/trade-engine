@@ -227,19 +227,25 @@ func GetLiveOrderBook(ctx *gin.Context) {
 			select {
 			case val := <-models.Trigger:
 				if val > 0 {
+					totalAsk := decimal.Zero
+					totalBid := decimal.Zero
 					ask, bid, usdSpace := standalone.GetOrderBook(product, val)
 					resp := models.OrderBookResponse{}
 					resp.UsdSpace = usdSpace
 					for key, val := range ask {
 						mp := make(map[string]decimal.Decimal)
 						mp[key] = val
+						totalAsk = totalAsk.Add(val)
 						resp.Ask = append(resp.Ask, mp)
 					}
 					for key, val := range bid {
 						mp := make(map[string]decimal.Decimal)
 						mp[key] = val
+						totalBid = totalBid.Add(val)
 						resp.Bid = append(resp.Bid, mp)
 					}
+					resp.TotalASk = totalAsk
+					resp.TotalBid = totalBid
 					models.Mu.Lock()
 					conn, ok := ClientConn[val]
 					models.Mu.Unlock()
