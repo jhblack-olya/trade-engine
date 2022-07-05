@@ -350,7 +350,15 @@ func (Order) TableName() string {
 }
 
 type OrderBookResponse struct {
-	Ask      []map[string]decimal.Decimal `json:"ask"`
-	Bid      []map[string]decimal.Decimal `json:"bid"`
-	UsdSpace decimal.Decimal              `json:"usd_spread"`
+	Ask      []Record        `json:"ask"`
+	Bid      []Record        `json:"bid"`
+	UsdSpace decimal.Decimal `json:"usd_spread"`
+	TotalBid decimal.Decimal `json:"total_bid"`
+	TotalASk decimal.Decimal `json:"total_ask"`
+}
+
+type Record struct {
+	Id       int             `json:"id"`
+	Price    string          `json:"price"`
+	Quantity decimal.Decimal `json:"quantity"`
 }
