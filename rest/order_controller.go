@@ -172,7 +172,7 @@ type WebsocketClient struct {
 	CloseChan chan bool
 }
 
-var ClientConn map[int64]map[int64]*WebsocketClient
+var ClientConn map[int64]map[string]*WebsocketClient
 
 func GetLiveOrderBook(ctx *gin.Context) {
 	art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
@@ -180,11 +180,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		ctx.JSON(http.StatusForbidden, newMessageVo(err))
 
 	}
-	userId, err := strconv.ParseInt(ctx.Query("user"), 10, 64)
-	if err != nil {
-		ctx.JSON(http.StatusForbidden, newMessageVo(err))
-
-	}
+	userId := ctx.Query("user")
 	product := ctx.Query("product")
 	if product == "" {
 		product = "ABT-USDT"
@@ -206,8 +202,8 @@ func GetLiveOrderBook(ctx *gin.Context) {
 				}
 			}
 		} else {
-			ClientConn[art] = make(map[int64]*WebsocketClient)
-			userClient := make(map[int64]*WebsocketClient)
+			ClientConn[art] = make(map[string]*WebsocketClient)
+			userClient := make(map[string]*WebsocketClient)
 			userClient[userId] = &WebsocketClient{
 				Ws:        ws,
 				CloseChan: make(chan bool),
@@ -219,7 +215,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		models.Trigger <- art
 
 	}
-	go func(art, userId int64, product string) {
+	go func(art int64, userId, product string) {
 		models.Mu.Lock()
 		clsChan := ClientConn[art][userId].CloseChan
 		models.Mu.Unlock()
@@ -296,11 +292,7 @@ func CloseWebsocket(ctx *gin.Context) {
 		ctx.JSON(http.StatusForbidden, newMessageVo(err))
 
 	}
-	userId, err := strconv.ParseInt(ctx.Query("user"), 10, 64)
-	if err != nil {
-		ctx.JSON(http.StatusForbidden, newMessageVo(err))
-
-	}
+	userId := ctx.Query("user")
 	models.Mu.Lock()
 	conn, ok := ClientConn[art]
 	models.Mu.Unlock()

@@ -21,7 +21,7 @@ var RedisErrCh chan error
 var MysqlErrCh chan error
 var KafkaErrCh chan error
 var Trigger chan int64
-var UserChan map[int64]chan int64
+var UserChan map[string]chan int64
 var Mu *sync.Mutex
 
 func NewSideFromString(s string) (*Side, error) {
