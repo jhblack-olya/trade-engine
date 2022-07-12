@@ -184,7 +184,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 	}
 	userId := ctx.Query("user")
 	if userId == "" {
-		ctx.JSON(http.StatusForbidden, newMessageVo(errors.New("invalid user id")))
+		ctx.JSON(http.StatusForbidden, newMessageVo(errors.New("invalid user")))
 		return
 	}
 	product := ctx.Query("product")
@@ -192,27 +192,46 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		product = "ABT-USDT"
 	}
 	status := ctx.Query("status")
-	ws, err := UpGrader.Upgrade(ctx.Writer, ctx.Request, nil)
-	if err != nil {
-		log.Println("error get connection")
-		log.Fatal(err)
-	}
+
 	if status == "open" {
 		//userClient[userId] = wsClient
 		models.Mu.Lock()
 		if userConn, ok := ClientConn[art]; ok {
 			if _, ok1 := userConn[userId]; !ok1 {
+				ws, err := UpGrader.Upgrade(ctx.Writer, ctx.Request, nil)
+				if err != nil {
+					log.Println("error get connection")
+					log.Fatal(err)
+				}
 				userConn[userId] = &WebsocketClient{
 					Ws:        ws,
 					CloseChan: make(chan bool),
 				}
+
 			} else {
-				fmt.Println("Error: user connecton already exist")
-				return
+				err := userConn[userId].Ws.Close()
+				if err != nil {
+					fmt.Println("Error on close ", err.Error())
+				}
+				ws, err := UpGrader.Upgrade(ctx.Writer, ctx.Request, nil)
+				if err != nil {
+					log.Println("error get connection")
+					log.Fatal(err)
+				}
+				userConn[userId] = &WebsocketClient{
+					Ws:        ws,
+					CloseChan: make(chan bool),
+				} //return
+
 			}
 		} else {
 			ClientConn[art] = make(map[string]*WebsocketClient)
 			userClient := make(map[string]*WebsocketClient)
+			ws, err := UpGrader.Upgrade(ctx.Writer, ctx.Request, nil)
+			if err != nil {
+				log.Println("error get connection")
+				log.Fatal(err)
+			}
 			userClient[userId] = &WebsocketClient{
 				Ws:        ws,
 				CloseChan: make(chan bool),
