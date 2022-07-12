@@ -66,7 +66,7 @@ func (server *WsServer) Start() {
 
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	sockets := r.Group("/", checkAPIkey())
+	sockets := r.Group("/")
 	{
 		sockets.GET("/api/ws/orderbook", GetLiveOrderBook)
 	}
