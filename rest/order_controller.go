@@ -8,6 +8,8 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -181,6 +183,10 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		return
 	}
 	userId := ctx.Query("user")
+	if userId == "" {
+		ctx.JSON(http.StatusForbidden, newMessageVo(errors.New("invalid user id")))
+		return
+	}
 	product := ctx.Query("product")
 	if product == "" {
 		product = "ABT-USDT"
@@ -200,6 +206,9 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					Ws:        ws,
 					CloseChan: make(chan bool),
 				}
+			} else {
+				fmt.Println("Error: user connecton already exist")
+				return
 			}
 		} else {
 			ClientConn[art] = make(map[string]*WebsocketClient)
@@ -255,6 +264,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					models.Mu.Lock()
 					conn, ok := ClientConn[val]
 					models.Mu.Unlock()
+					fmt.Println("Response \n\n%+v\n ", resp)
 					if ok {
 						for _, userConn := range conn {
 							err := userConn.Ws.WriteJSON(&resp)
