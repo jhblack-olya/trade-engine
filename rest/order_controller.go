@@ -178,7 +178,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 	art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusForbidden, newMessageVo(err))
-
+		return
 	}
 	userId := ctx.Query("user")
 	product := ctx.Query("product")

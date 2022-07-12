@@ -170,7 +170,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			takerOrder.Price = decimal.Zero
 		}
 	}
-	var executedValue, filledSize /*, makerExecutedValue, makerFilledSize*/ decimal.Decimal
+	var executedValue, filledSize, takerActualSize /*, makerExecutedValue, makerFilledSize*/ decimal.Decimal
 	var takermatchedAt string
 
 	makerDepth := o.artDepths[takerOrder.Art][takerOrder.Side.Opposite()]
@@ -212,6 +212,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			if takerOrder.Funds.IsZero() {
 				break
 			}
+			takerActualSize = takerOrder.Size
 			//Understand it by example
 			//Let marketprice = 5 and size=5 therefor fund of taker = 5x5=25
 			// let most available price i.e maker price = 6 and size = 3
@@ -219,7 +220,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			//So we divide funds on basis of maker price to know what size of trade will get executed at current maker price
 			//takerSize=25/6 = 4 for ease of understanding
 			takerSize := takerOrder.Funds.Div(price).Truncate(o.product.BaseScale)
-			if takerSize.IsZero() {
+			if takerSize.IsZero() || filledSize.GreaterThan(takerActualSize) {
 				break
 			}
 			//taking minimum of takerSize and makerSize so trade gets completely filled
@@ -290,13 +291,19 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 		if takerOrder.Type == models.OrderTypeMarket.Int() {
 			takerOrder.Price = decimal.Zero
 			remainingSize = decimal.Zero
-			if (takerOrder.Side == models.SideSell && takerOrder.Size.GreaterThan(decimal.Zero)) ||
-				(takerOrder.Side == models.SideBuy && takerOrder.Funds.GreaterThan(decimal.Zero)) {
+			if takerOrder.Side == models.SideSell && takerOrder.Size.GreaterThan(decimal.Zero) { /* ||
+				(takerOrder.Side == models.SideBuy && takerOrder.Funds.GreaterThan(decimal.Zero))*/
 				takermatchedAt = time.Now().Format("2006-01-02 15:04:05")
 				reason = models.DoneReasonCancelled
 				//newPendingLog(o.nextLogSeq(), o.product.Id, nil, remainingSize)
+			} else if takerOrder.Side == models.SideBuy && takerOrder.Funds.GreaterThan(decimal.Zero) {
+				if !takerActualSize.Equal(filledSize) {
+					takermatchedAt = time.Now().Format("2006-01-02 15:04:05")
+					reason = models.DoneReasonCancelled
+				}
 			}
 		}
+
 		doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, takerOrder, remainingSize, reason, takerOrder.ExpiresIn, takerOrder.Art, executedValue, filledSize, takermatchedAt)
 		logs = append(logs, doneLog)
 	}
