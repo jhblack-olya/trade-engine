@@ -40,7 +40,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		funds = size.Mul(price)
 	} else if orderType == models.OrderTypeMarket {
 		if side == models.SideBuy {
-			size = decimal.Zero
+			//	size = decimal.Zero
 			price = decimal.Zero
 			funds = funds.Round(product.QuoteScale)
 			if funds.LessThan(product.QuoteMinSize) {

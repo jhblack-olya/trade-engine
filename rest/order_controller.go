@@ -283,6 +283,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					models.Mu.Lock()
 					conn, ok := ClientConn[val]
 					models.Mu.Unlock()
+					fmt.Println("Response \n\n%+v\n ", resp)
 					if ok {
 						for _, userConn := range conn {
 							err := userConn.Ws.WriteJSON(&resp)
