@@ -198,7 +198,6 @@ func ExecuteFill(orderId, timer int64, art int64, cancelledAt string) error {
 					order.Status = models.OrderStatusCancelled
 				} else {
 					order.Status = models.OrderStatusPartial
-					fmt.Println("Cancelledat ", cancelledAt, "\n fill.CancellAt ", fill.CancelledAt)
 				}
 
 				if fill.CancelledAt == "" && cancelledAt == "" {

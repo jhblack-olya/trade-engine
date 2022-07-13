@@ -7,7 +7,6 @@ package matching
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/segmentio/kafka-go"
 	logger "github.com/siddontang/go-log/log"
@@ -80,7 +79,6 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("open log \n%+v", log)
 			r.observer.OnOpenLog(&log, kMessage.Offset)
 		case LogTypeMatch:
 			var log MatchLog
