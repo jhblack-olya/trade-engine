@@ -41,7 +41,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	} else if orderType == models.OrderTypeMarket {
 		if side == models.SideBuy {
 			//	size = decimal.Zero
-			price = decimal.Zero
+			//price = decimal.Zero
 			funds = funds.Round(product.QuoteScale)
 			if funds.LessThan(product.QuoteMinSize) {
 				return nil, fmt.Errorf("funds %v less than quote min size %v", funds, product.QuoteMinSize)
@@ -52,8 +52,8 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 			if size.LessThan(product.BaseMinSize) {
 				return nil, fmt.Errorf("size %v less than base size %v", size, product.BaseMinSize)
 			}
-			price = decimal.Zero
-			funds = decimal.Zero
+			//	price = decimal.Zero
+			//	funds = decimal.Zero
 		}
 	} else {
 		err := errors.New("unknown order type")
