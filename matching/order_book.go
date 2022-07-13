@@ -170,7 +170,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			takerOrder.Price = decimal.Zero
 		}
 	}
-	var executedValue, filledSize, takerActualSize /*, makerExecutedValue, makerFilledSize*/ decimal.Decimal
+	var executedValue, filledSize /*, makerExecutedValue, makerFilledSize*/ decimal.Decimal
 	var takermatchedAt string
 
 	makerDepth := o.artDepths[takerOrder.Art][takerOrder.Side.Opposite()]
@@ -212,7 +212,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			if takerOrder.Funds.IsZero() {
 				break
 			}
-			takerActualSize = takerOrder.Size
+			//takerActualSize = takerOrder.Size
 			fmt.Println("taker actual size ", takerOrder.Size)
 			//Understand it by example
 			//Let marketprice = 5 and size=5 therefor fund of taker = 5x5=25
@@ -225,13 +225,12 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 				break
 			}
 
-			if filledSize.GreaterThan(takerActualSize) {
-				fmt.Println("===================\n filled size equals taker requirement \n==============\n")
-				break
-			}
 			//taking minimum of takerSize and makerSize so trade gets completely filled
 			//size=3
 			size = decimal.Min(takerSize, makerOrder.Size)
+			if takerOrder.Size.LessThan(size) {
+				size = takerOrder.Size
+			}
 			fmt.Println("size evaluated ", size)
 			//fund=3*6=18
 			funds := size.Mul(price)
@@ -242,6 +241,7 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 
 			executedValue = funds.Add(executedValue)
 			filledSize = size.Add(filledSize)
+			takerOrder.Size = takerOrder.Size.Sub(size)
 
 		} else {
 			log.Fatal("unknown orderType and side combination")
@@ -304,7 +304,8 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 				//newPendingLog(o.nextLogSeq(), o.product.Id, nil, remainingSize)
 			} else if takerOrder.Side == models.SideBuy && takerOrder.Funds.GreaterThan(decimal.Zero) {
 				fmt.Println("filled size is equal to ", filledSize)
-				if !takerActualSize.Equal(filledSize) {
+				fmt.Println("takerorder size is equal to ", takerOrder.Size)
+				if !takerOrder.Size.IsZero() {
 					takermatchedAt = time.Now().Format("2006-01-02 15:04:05")
 					reason = models.DoneReasonCancelled
 				}
