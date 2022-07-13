@@ -110,12 +110,13 @@ const (
 	// The order has been canceled, and some orders are also canceled
 	OrderStatusCancelled = OrderStatus("cancelled")
 	// Completed order
-	OrderStatusFilled = OrderStatus("filled")
-
-	BillTypeTrade = BillType("trade")
+	OrderStatusFilled  = OrderStatus("filled")
+	OrderStatusPartial = OrderStatus("partial_filled")
+	BillTypeTrade      = BillType("trade")
 
 	DoneReasonFilled    = DoneReason("filled")
 	DoneReasonCancelled = DoneReason("cancelled")
+	DoneReasonPartial   = DoneReason("partial")
 
 	TransactionStatusPending   = TransactionStatus("pending")
 	TransactionStatusCompleted = TransactionStatus("completed")

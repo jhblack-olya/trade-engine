@@ -193,8 +193,13 @@ func ExecuteFill(orderId, timer int64, art int64, cancelledAt string) error {
 			}
 
 		} else {
-			if fill.DoneReason == models.DoneReasonCancelled {
-				order.Status = models.OrderStatusCancelled
+			if fill.DoneReason == models.DoneReasonCancelled || fill.DoneReason == models.DoneReasonPartial {
+				if fill.DoneReason == models.DoneReasonCancelled {
+					order.Status = models.OrderStatusCancelled
+				} else {
+					order.Status = models.OrderStatusPartial
+				}
+
 				if fill.CancelledAt == "" && cancelledAt == "" {
 					order.CancelledAt = nil
 				} else if cancelledAt != "" {
@@ -257,6 +262,15 @@ func ExecuteFill(orderId, timer int64, art int64, cancelledAt string) error {
 		}
 	}
 	order.ExpiresIn = timer
+	/*if order.Status == models.OrderStatusCancelled {
+		checkOrder, err := db.GetOrderById(order.Id)
+		if err != nil {
+			return err
+		}
+		if !order.FilledSize.IsZero() && checkOrder.Size.GreaterThan(order.FilledSize) {
+			order.Status = models.OrderStatusPartial
+		}
+	}*/
 	err = db.UpdateOrder(order)
 	if err != nil {
 		return err

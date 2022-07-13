@@ -170,9 +170,9 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			takerOrder.Price = decimal.Zero
 		}
 	}
-	var executedValue, filledSize /*, makerExecutedValue, makerFilledSize*/ decimal.Decimal
+	var executedValue, filledSize, tackerActualSize /*, makerExecutedValue, makerFilledSize*/ decimal.Decimal
 	var takermatchedAt string
-
+	tackerActualSize = takerOrder.Size
 	makerDepth := o.artDepths[takerOrder.Art][takerOrder.Side.Opposite()]
 	for itr := makerDepth.queue.Iterator(); itr.Next(); {
 		//maker who have already placed order normally not an immediate buyer or seller
@@ -305,7 +305,10 @@ func (o *orderBook) ApplyOrder(order *models.Order) (logs []Log) {
 			} else if takerOrder.Side == models.SideBuy && takerOrder.Funds.GreaterThan(decimal.Zero) {
 				fmt.Println("filled size is equal to ", filledSize)
 				fmt.Println("takerorder size is equal to ", takerOrder.Size)
-				if !takerOrder.Size.IsZero() {
+				if !takerOrder.Size.IsZero() && tackerActualSize.GreaterThan(takerOrder.Size) {
+					takermatchedAt = time.Now().Format("2006-01-02 15:04:05")
+					reason = models.DoneReasonPartial
+				} else if tackerActualSize.Equal(takerOrder.Size) {
 					takermatchedAt = time.Now().Format("2006-01-02 15:04:05")
 					reason = models.DoneReasonCancelled
 				}
@@ -333,11 +336,14 @@ func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 	if err != nil {
 		panic(err)
 	}
-	if remainingSize.GreaterThan(decimal.Zero) {
+	var doneLog *DoneLog
+	if remainingSize.GreaterThan(decimal.Zero) && order.Size.GreaterThan(remainingSize) {
 		pendingLog := newPendingLog(o.nextLogSeq(), o.product.Id, order.Side, remainingSize, order.Id, order.Type, order.Art)
 		logs = append(logs, pendingLog)
+		doneLog = newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonPartial, order.ExpiresIn, order.Art, decimal.Zero, decimal.Zero, cancelledAt)
+	} else if order.Size.Equal(remainingSize) {
+		doneLog = newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn, order.Art, decimal.Zero, decimal.Zero, cancelledAt)
 	}
-	doneLog := newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonCancelled, order.ExpiresIn, order.Art, decimal.Zero, decimal.Zero, cancelledAt)
 	return append(logs, doneLog)
 }
 
