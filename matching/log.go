@@ -128,9 +128,9 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 		matchedAt     string
 	)
 
-	if reason == models.DoneReasonCancelled || reason == models.DoneReasonPartial {
+	if reason == models.DoneReasonCancelled {
 		cancelledTime = timeStamp
-	} else if reason == models.DoneReasonFilled {
+	} else if reason == models.DoneReasonFilled || reason == models.DoneReasonPartial {
 		matchedAt = timeStamp
 	}
 	return &DoneLog{

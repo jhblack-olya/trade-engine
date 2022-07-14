@@ -193,12 +193,8 @@ func ExecuteFill(orderId, timer int64, art int64, cancelledAt string) error {
 			}
 
 		} else {
-			if fill.DoneReason == models.DoneReasonCancelled || fill.DoneReason == models.DoneReasonPartial {
-				if fill.DoneReason == models.DoneReasonCancelled {
-					order.Status = models.OrderStatusCancelled
-				} else {
-					order.Status = models.OrderStatusPartial
-				}
+			if fill.DoneReason == models.DoneReasonCancelled {
+				order.Status = models.OrderStatusCancelled
 
 				if fill.CancelledAt == "" && cancelledAt == "" {
 					order.CancelledAt = nil
@@ -217,8 +213,13 @@ func ExecuteFill(orderId, timer int64, art int64, cancelledAt string) error {
 					}
 					order.CancelledAt = &time
 				}
-			} else if fill.DoneReason == models.DoneReasonFilled {
-				order.Status = models.OrderStatusFilled
+			} else if fill.DoneReason == models.DoneReasonFilled || fill.DoneReason == models.DoneReasonPartial {
+				if fill.DoneReason == models.DoneReasonFilled {
+					order.Status = models.OrderStatusFilled
+				} else {
+					order.Status = models.OrderStatusPartial
+				}
+
 				if fill.ExecutedAt == "" {
 					order.ExecutedAt = nil
 				} else {
