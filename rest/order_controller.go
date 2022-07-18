@@ -259,9 +259,9 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					i := 1
 					for key, val := range ask {
 						record := models.Record{
-							Id:       i,
 							Price:    key,
 							Quantity: val,
+							Id:       i,
 						}
 						totalAsk = totalAsk.Add(val)
 						resp.Ask = append(resp.Ask, record)
@@ -270,9 +270,9 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					i = 1
 					for key, val := range bid {
 						record := models.Record{
-							Id:       i,
 							Price:    key,
 							Quantity: val,
+							Id:       i,
 						}
 						totalBid = totalBid.Add(val)
 						resp.Bid = append(resp.Bid, record)

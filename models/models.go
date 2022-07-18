@@ -359,7 +359,7 @@ type OrderBookResponse struct {
 }
 
 type Record struct {
-	Id       int             `json:"id"`
 	Price    string          `json:"price"`
 	Quantity decimal.Decimal `json:"quantity"`
+	Id       int             `json:"id"`
 }
