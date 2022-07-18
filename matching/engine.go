@@ -396,7 +396,7 @@ func (e *Engine) LiveOrderBook(art int64) (map[string]decimal.Decimal, map[strin
 	}
 	fmt.Println("bids ", bidDepth)
 	fmt.Println("ask ", askDepth)
-	usdSpace = bidMaxPrice.Sub(askMinPrice)
+	usdSpace = askMinPrice.Sub(bidMaxPrice)
 	return askDepth, bidDepth, usdSpace
 
 }

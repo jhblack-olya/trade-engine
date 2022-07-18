@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -255,29 +256,39 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					totalBid := decimal.Zero
 					ask, bid, usdSpace := standalone.GetOrderBook(product, val)
 					resp := models.OrderBookResponse{}
+					//usedSpread:= askMin-bidMax
 					resp.UsdSpace = usdSpace
-					i := 1
+					//ask == sell == red
 					for key, val := range ask {
+						k, _ := decimal.NewFromString(key)
+
 						record := models.Record{
-							Price:    key,
+							Price:    k,
 							Quantity: val,
-							Id:       i,
 						}
 						totalAsk = totalAsk.Add(val)
 						resp.Ask = append(resp.Ask, record)
-						i++
 					}
-					i = 1
+					//bid == buy == green
 					for key, val := range bid {
+						k, _ := decimal.NewFromString(key)
 						record := models.Record{
-							Price:    key,
+							Price:    k,
 							Quantity: val,
-							Id:       i,
 						}
 						totalBid = totalBid.Add(val)
 						resp.Bid = append(resp.Bid, record)
-						i++
+
 					}
+					sort.Slice(resp.Ask, func(i, j int) bool {
+						return resp.Ask[i].Price.GreaterThan(resp.Ask[j].Price)
+
+					})
+					sort.Slice(resp.Bid, func(i, j int) bool {
+						return resp.Bid[i].Price.GreaterThan(resp.Bid[j].Price)
+
+					})
+
 					resp.TotalASk = totalAsk
 					resp.TotalBid = totalBid
 					models.Mu.Lock()
