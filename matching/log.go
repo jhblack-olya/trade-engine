@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -16,9 +15,10 @@ import (
 type LogType string
 
 const (
-	LogTypeMatch = LogType("match")
-	LogTypeOpen  = LogType("open")
-	LogTypeDone  = LogType("done")
+	LogTypeMatch   = LogType("match")
+	LogTypeOpen    = LogType("open")
+	LogTypeDone    = LogType("done")
+	LogTypePending = LogType("pending")
 )
 
 type Log interface {
@@ -40,7 +40,7 @@ type OpenLog struct {
 	Side           models.Side
 	ExpiresIn      int64
 	BackendOrderId string
-	Art            string
+	Art            int64
 }
 
 type DoneLog struct {
@@ -52,9 +52,11 @@ type DoneLog struct {
 	Side           models.Side
 	ExpiresIn      int64
 	BackendOrderId string
-	Art            string
+	Art            int64
 	ExecutedValue  decimal.Decimal
 	FilledSize     decimal.Decimal
+	CancelledAt    string
+	ExecutedAt     string
 }
 
 type MatchLog struct {
@@ -71,11 +73,22 @@ type MatchLog struct {
 	MakerExpiresIn      int64
 	TakerBackendOrderId string
 	MakerBackendOrderId string
-	TakerArt            string
-	MakerArt            string
+	TakerArt            int64
+	MakerArt            int64
+	TakerExecutedAt     string
+	MakerExecutedAt     string
 }
 
-func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64, takerArt, makerArt string) *MatchLog {
+type PendingLog struct {
+	Base
+	OrderId       int64
+	OrderType     int64
+	Art           int64
+	RemainingSize decimal.Decimal
+	Side          models.Side
+}
+
+func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64, takerArt, makerArt int64, takerMatchedAt, makermatchedAt string) *MatchLog {
 	return &MatchLog{
 		Base:                Base{LogTypeMatch, logSeq, productId, time.Now()},
 		TradeId:             tradeSeq,
@@ -92,9 +105,11 @@ func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, mak
 		MakerBackendOrderId: makerOrder.BackendOrderId,
 		TakerArt:            takerArt,
 		MakerArt:            makerArt,
+		TakerExecutedAt:     takerMatchedAt,
+		MakerExecutedAt:     makermatchedAt,
 	}
 }
-func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64, art string) *OpenLog {
+func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64, art int64) *OpenLog {
 	return &OpenLog{
 		Base:           Base{LogTypeOpen, logSeq, productId, time.Now()},
 		OrderId:        takerOrder.OrderId,
@@ -107,7 +122,17 @@ func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int
 	}
 }
 
-func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, art string, executedValue, filledSize decimal.Decimal) *DoneLog {
+func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, art int64, executedValue, filledSize decimal.Decimal, timeStamp string) *DoneLog {
+	var (
+		cancelledTime string
+		matchedAt     string
+	)
+
+	if reason == models.DoneReasonCancelled {
+		cancelledTime = timeStamp
+	} else if reason == models.DoneReasonFilled || reason == models.DoneReasonPartial {
+		matchedAt = timeStamp
+	}
 	return &DoneLog{
 		Base:           Base{LogTypeDone, logSeq, productId, time.Now()},
 		OrderId:        order.OrderId,
@@ -120,6 +145,19 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 		Art:            art,
 		ExecutedValue:  executedValue,
 		FilledSize:     filledSize,
+		CancelledAt:    cancelledTime,
+		ExecutedAt:     matchedAt,
+	}
+}
+
+func newPendingLog(logSeq int64, productId string, side models.Side, remainingSize decimal.Decimal, orderId, orderType, art int64) *PendingLog {
+	return &PendingLog{
+		Base:          Base{LogTypePending, logSeq, productId, time.Now()},
+		OrderId:       orderId,
+		RemainingSize: remainingSize,
+		Side:          side,
+		Art:           art,
+		OrderType:     orderType,
 	}
 }
 
@@ -132,5 +170,9 @@ func (l *DoneLog) GetSeq() int64 {
 }
 
 func (l *MatchLog) GetSeq() int64 {
+	return l.Sequence
+}
+
+func (l *PendingLog) GetSeq() int64 {
 	return l.Sequence
 }

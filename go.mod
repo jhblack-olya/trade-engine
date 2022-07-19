@@ -8,6 +8,7 @@ require (
 	github.com/go-mysql-org/go-mysql v1.3.0
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/google/uuid v1.1.1
+	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru v0.5.0
 	github.com/jinzhu/gorm v1.9.10
 	github.com/json-iterator/go v1.1.7 // indirect

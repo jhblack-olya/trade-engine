@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -7,6 +6,8 @@ To obtain a license write to legal@gax.llc
 package main
 
 import (
+	"sync"
+
 	"github.com/prometheus/common/log"
 	"gitlab.com/gae4/trade-engine/conf"
 	"gitlab.com/gae4/trade-engine/controller"
@@ -25,6 +26,24 @@ func main() {
 	gbeConfig := conf.GetConfig()
 	go func() {
 		log.Info(http.ListenAndServe("localhost:6000", nil))
+	}()
+	models.CommonError = make(map[string]string)
+	models.RedisErrCh = make(chan error, 10)
+	models.MysqlErrCh = make(chan error, 10)
+	models.KafkaErrCh = make(chan error, 10)
+	rest.ClientConn = make(map[int64]map[string]*rest.WebsocketClient)
+	models.Mu = new(sync.Mutex)
+	go func() {
+		for {
+			select {
+			case val := <-models.RedisErrCh:
+				models.CommonError["redis"] = val.Error()
+			case val := <-models.MysqlErrCh:
+				models.CommonError["mysql"] = val.Error()
+			case val := <-models.KafkaErrCh:
+				models.CommonError["kafka"] = val.Error()
+			}
+		}
 	}()
 
 	controller.ProcessOrder()

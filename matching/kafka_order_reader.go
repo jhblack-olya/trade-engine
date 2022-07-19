@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -36,12 +35,18 @@ func NewKafkaOrderReader(productId string, brokers []string) *KafkaOrderReader {
 }
 
 func (s *KafkaOrderReader) SetOffset(offset int64) error {
-	return s.orderReader.SetOffset(offset)
+	err := s.orderReader.SetOffset(offset)
+	if err != nil {
+		models.KafkaErrCh <- err
+		return err
+	}
+	return nil
 }
 
 func (s *KafkaOrderReader) FetchOrder() (offset int64, order *models.Order, err error) {
 	message, err := s.orderReader.FetchMessage(context.Background())
 	if err != nil {
+		models.KafkaErrCh <- err
 		return 0, nil, err
 	}
 	err = json.Unmarshal(message.Value, &order)

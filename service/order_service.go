@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -10,16 +9,17 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"gitlab.com/gae4/trade-engine/models"
 	"gitlab.com/gae4/trade-engine/models/mysql"
-	"gitlab.com/gae4/trade-engine/utils"
 )
 
 //PlaceOrder: adds order and bills to tables and pass order to matching engine
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
-	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string, art string) (*models.Order, error) {
+	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string, art int64, commission, commissionPercent decimal.Decimal) (*models.Order, error) {
 	product, err := GetProductById(productId)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,6 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	if product == nil {
 		return nil, errors.New(fmt.Sprintf("product not found: %v", productId))
 	}
-
 	if orderType == models.OrderTypeLimit {
 		size = size.Round(product.BaseScale)
 		if size.LessThan(product.BaseMinSize) {
@@ -41,19 +40,20 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		funds = size.Mul(price)
 	} else if orderType == models.OrderTypeMarket {
 		if side == models.SideBuy {
-			size = decimal.Zero
-			price = decimal.Zero
+			//	size = decimal.Zero
+			//price = decimal.Zero
 			funds = funds.Round(product.QuoteScale)
 			if funds.LessThan(product.QuoteMinSize) {
 				return nil, fmt.Errorf("funds %v less than quote min size %v", funds, product.QuoteMinSize)
 			}
+
 		} else {
 			size = size.Round(product.BaseScale)
 			if size.LessThan(product.BaseMinSize) {
 				return nil, fmt.Errorf("size %v less than base size %v", size, product.BaseMinSize)
 			}
-			price = decimal.Zero
-			funds = decimal.Zero
+			//	price = decimal.Zero
+			//	funds = decimal.Zero
 		}
 	} else {
 		err := errors.New("unknown order type")
@@ -63,10 +63,12 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 
 	var holdCurrency string
 	var holdSize decimal.Decimal
+	//var holdCommission decimal.Decimal
 	if side == models.SideBuy {
 		holdCurrency, holdSize = product.QuoteCurrency, funds
+		//	holdCommission = holdSize.Add(holdSize.Mul(holdSize))
 	} else {
-		holdCurrency, holdSize = art+"_"+product.BaseCurrency, size
+		holdCurrency, holdSize = strconv.FormatInt(art, 10)+"_"+product.BaseCurrency, size
 	}
 
 	order := &models.Order{
@@ -78,11 +80,13 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		Funds:          funds,
 		Price:          price,
 		Status:         models.OrderStatusNew,
-		Type:           orderType,
+		Type:           orderType.Int(),
 		ExpiresIn:      expiresIn,
-		TimeInForce:    utils.I64ToA(expiresIn),
 		BackendOrderId: backendOrderId,
-		Art:            art,
+		//	ArtName:        int64(artInt),
+		CommissionPercent: commissionPercent,
+		FillFees:          commission,
+		Art:               art,
 	}
 
 	db, err := mysql.SharedStore().BeginTx()
@@ -91,7 +95,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	}
 	defer func() { _ = db.Rollback() }()
 
-	err = HoldBalance(db, userId, holdCurrency, holdSize, models.BillTypeTrade)
+	err = HoldBalance(db, userId, holdCurrency, holdSize, models.BillTypeTrade, commission, product.QuoteCurrency)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +104,7 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	if err != nil {
 		return nil, err
 	}
-
+	order.BackendOrderId = strconv.FormatInt(order.Id, 10)
 	return order, db.CommitTx()
 }
 
@@ -109,7 +113,7 @@ func GetOrderById(orderId int64) (*models.Order, error) {
 }
 
 //ExecuteFill: updates fill table and adds delay bills
-func ExecuteFill(orderId, timer int64, art string) error {
+func ExecuteFill(orderId, timer int64, art int64, cancelledAt string) error {
 	db, err := mysql.SharedStore().BeginTx()
 	if err != nil {
 		return err
@@ -155,7 +159,7 @@ func ExecuteFill(orderId, timer int64, art string) error {
 			order.FilledSize = order.FilledSize.Add(fill.Size)
 			if order.Side == models.SideBuy {
 				// Buy order, incr base
-				bill, err := AddDelayBill(db, order.UserId, art+"_"+product.BaseCurrency, fill.Size, decimal.Zero,
+				bill, err := AddDelayBill(db, order.UserId, strconv.FormatInt(art, 10)+"_"+product.BaseCurrency, fill.Size, decimal.Zero,
 					models.BillTypeTrade, notes)
 				if err != nil {
 					return err
@@ -172,7 +176,7 @@ func ExecuteFill(orderId, timer int64, art string) error {
 
 			} else {
 				// decr base
-				bill, err := AddDelayBill(db, order.UserId, art+"_"+product.BaseCurrency, decimal.Zero, fill.Size.Neg(),
+				bill, err := AddDelayBill(db, order.UserId, strconv.FormatInt(art, 10)+"_"+product.BaseCurrency, decimal.Zero, fill.Size.Neg(),
 					models.BillTypeTrade, notes)
 				if err != nil {
 					return err
@@ -191,8 +195,41 @@ func ExecuteFill(orderId, timer int64, art string) error {
 		} else {
 			if fill.DoneReason == models.DoneReasonCancelled {
 				order.Status = models.OrderStatusCancelled
-			} else if fill.DoneReason == models.DoneReasonFilled {
-				order.Status = models.OrderStatusFilled
+
+				if fill.CancelledAt == "" && cancelledAt == "" {
+					order.CancelledAt = nil
+				} else if cancelledAt != "" {
+					time, err := time.Parse("2006-01-02 15:04:05", fill.CancelledAt)
+					if err != nil {
+						log.Println("Time converstion error ", err.Error())
+						return err
+					}
+					order.CancelledAt = &time
+				} else {
+					time, err := time.Parse("2006-01-02 15:04:05", fill.CancelledAt)
+					if err != nil {
+						log.Println("Time converstion error ", err.Error())
+						return err
+					}
+					order.CancelledAt = &time
+				}
+			} else if fill.DoneReason == models.DoneReasonFilled || fill.DoneReason == models.DoneReasonPartial {
+				if fill.DoneReason == models.DoneReasonFilled {
+					order.Status = models.OrderStatusFilled
+				} else {
+					order.Status = models.OrderStatusPartial
+				}
+
+				if fill.ExecutedAt == "" {
+					order.ExecutedAt = nil
+				} else {
+					time, err := time.Parse("2006-01-02 15:04:05", fill.ExecutedAt)
+					if err != nil {
+						log.Println("Time converstion error ", err.Error())
+						return err
+					}
+					order.ExecutedAt = &time
+				}
 			} else {
 				log.Fatalf("unknown done reason: %v", fill.DoneReason)
 			}
@@ -213,7 +250,7 @@ func ExecuteFill(orderId, timer int64, art string) error {
 				// If it is a sell order, thaw the remaining size
 				remainingSize := order.Size.Sub(order.FilledSize)
 				if remainingSize.GreaterThan(decimal.Zero) {
-					bill, err := AddDelayBill(db, order.UserId, art+"_"+product.BaseCurrency, remainingSize, remainingSize.Neg(),
+					bill, err := AddDelayBill(db, order.UserId, strconv.FormatInt(art, 10)+"_"+product.BaseCurrency, remainingSize, remainingSize.Neg(),
 						models.BillTypeTrade, notes)
 					if err != nil {
 						return err
@@ -226,6 +263,15 @@ func ExecuteFill(orderId, timer int64, art string) error {
 		}
 	}
 	order.ExpiresIn = timer
+	/*if order.Status == models.OrderStatusCancelled {
+		checkOrder, err := db.GetOrderById(order.Id)
+		if err != nil {
+			return err
+		}
+		if !order.FilledSize.IsZero() && checkOrder.Size.GreaterThan(order.FilledSize) {
+			order.Status = models.OrderStatusPartial
+		}
+	}*/
 	err = db.UpdateOrder(order)
 	if err != nil {
 		return err

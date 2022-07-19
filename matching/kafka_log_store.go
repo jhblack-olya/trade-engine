@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"gitlab.com/gae4/trade-engine/models"
 )
 
 const (
@@ -42,5 +42,10 @@ func (s *KafkaLogStore) Store(logs []interface{}) error {
 		}
 		messages = append(messages, kafka.Message{Value: val})
 	}
-	return s.logWriter.WriteMessages(context.Background(), messages...)
+	err := s.logWriter.WriteMessages(context.Background(), messages...)
+	if err != nil {
+		models.KafkaErrCh <- err
+		return err
+	}
+	return nil
 }

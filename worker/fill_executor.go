@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -47,11 +46,12 @@ func NewFillExecutor() *FillExecutor {
 						log.Warnf("order not found: %v", fill.OrderId)
 						continue
 					}
-					if order.Status == models.OrderStatusCancelled || order.Status == models.OrderStatusFilled {
+					if order.Status == models.OrderStatusCancelled || order.Status == models.OrderStatusFilled || order.Status == models.OrderStatusPartial {
 						settledOrderCache.Add(order.Id, struct{}{})
 						continue
 					}
-					err = service.ExecuteFill(fill.OrderId, fill.ExpiresIn, fill.Art)
+					cancelledAt := fill.CancelledAt
+					err = service.ExecuteFill(fill.OrderId, fill.ExpiresIn, fill.Art, cancelledAt)
 					if err != nil {
 						log.Error(err)
 					}
@@ -81,6 +81,7 @@ func (s *FillExecutor) runMqListener() {
 		ret := redisClient.BRPop(0, models.TopicFill)
 		if ret.Err() != nil {
 			log.Error(ret.Err())
+			models.RedisErrCh <- ret.Err()
 			continue
 		} else {
 
@@ -105,6 +106,7 @@ func (s *FillExecutor) runInspector() {
 			fills, err := service.GetUnsettledFills(1000)
 			if err != nil {
 				log.Error(err)
+				models.MysqlErrCh <- err
 				continue
 			}
 

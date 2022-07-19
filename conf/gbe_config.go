@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -21,6 +20,7 @@ type GbeConfig struct {
 	Kafka      KafkaConfig      `json:"kafka"`
 	PushServer PushServerConfig `json:"pushServer"`
 	RestServer RestServerConfig `json:"restServer"`
+	WSserver   WsServerConfig   `json:"wsServer"`
 	JwtSecret  string           `json:"jwtSecret"`
 	ApiKey     string           `json:"apiKey"`
 }
@@ -49,6 +49,10 @@ type PushServerConfig struct {
 }
 
 type RestServerConfig struct {
+	Addr string `json:"addr"`
+}
+
+type WsServerConfig struct {
 	Addr string `json:"addr"`
 }
 

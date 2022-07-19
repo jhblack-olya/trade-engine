@@ -1,9 +1,7 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
-
 package matching
 
 import (
@@ -12,6 +10,7 @@ import (
 
 	"github.com/segmentio/kafka-go"
 	logger "github.com/siddontang/go-log/log"
+	"gitlab.com/gae4/trade-engine/models"
 )
 
 type KafkaLogReader struct {
@@ -53,6 +52,8 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 		kMessage, err := r.reader.FetchMessage(context.Background())
 		if err != nil {
 			logger.Error(err)
+			models.KafkaErrCh <- err
+
 			continue
 		}
 

@@ -23,6 +23,9 @@
   "restServer": {
     "addr": ":8011"
   },
+  "wsServer": {
+    "addr": ":49151"
+  },
   "jwtSecret": "flj23jfoi23apdl3jfslkj23za01mf3",
   "apiKey": "S0xlYLWCGLHKbuZuSXiWsu0DIc5ZJiYJ"
 }

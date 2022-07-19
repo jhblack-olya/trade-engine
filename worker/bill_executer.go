@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -64,6 +63,7 @@ func (s *BillExecutor) runMqListener() {
 		ret := redisClient.BRPop(0, models.TopicBill)
 		if ret.Err() != nil {
 			log.Error(ret.Err().Error())
+			models.RedisErrCh <- ret.Err()
 			continue
 		}
 		var bill models.Bill
@@ -82,6 +82,7 @@ func (s *BillExecutor) runInspector() {
 			bills, err := service.GetUnsettledBills()
 			if err != nil {
 				log.Error(err.Error())
+				models.MysqlErrCh <- err
 				continue
 			}
 			for _, bill := range bills {

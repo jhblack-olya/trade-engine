@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -21,7 +20,6 @@ func ExecuteBill(userId int64, currency string) error {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-
 	account, err := tx.GetAccountForUpdate(userId, currency)
 	if err != nil {
 		return err
@@ -77,7 +75,7 @@ func ExecuteBill(userId int64, currency string) error {
 
 	return nil
 }
-func HoldBalance(db models.Store, userId int64, currency string, size decimal.Decimal, billType models.BillType) error {
+func HoldBalance(db models.Store, userId int64, currency string, size decimal.Decimal, billType models.BillType, commission decimal.Decimal, quoteCurrency string) error {
 	if size.LessThanOrEqual(decimal.Zero) {
 		err := errors.New("size less than 0")
 		log.Errorln(err.Error())
@@ -91,6 +89,17 @@ func HoldBalance(db models.Store, userId int64, currency string, size decimal.De
 
 	if !enough {
 		err := errors.New(fmt.Sprintf("no enough %v : request=%v", currency, size))
+		log.Errorln(err.Error())
+		return err
+	}
+	//is commission amount available
+	enough, err = HasEnoughBalance(userId, quoteCurrency, commission)
+	if err != nil {
+		return err
+	}
+
+	if !enough {
+		err := errors.New(fmt.Sprintf("no enough %v : request=%v", quoteCurrency, commission))
 		log.Errorln(err.Error())
 		return err
 	}
@@ -132,6 +141,25 @@ func HoldBalance(db models.Store, userId int64, currency string, size decimal.De
 		return err
 	}
 
+	account, err = db.GetAccountForUpdate(userId, quoteCurrency)
+	if err != nil {
+		log.Errorln(err.Error())
+		return err
+	}
+
+	if account == nil {
+		err := errors.New("no enough commission amount to hold")
+		log.Errorln(err.Error())
+		return err
+	}
+
+	account.Available = account.Available.Sub(commission)
+	account.Hold = account.Hold.Add(commission)
+	err = db.UpdateAccount(account)
+	if err != nil {
+		log.Errorln(err.Error())
+		return err
+	}
 	return nil
 }
 

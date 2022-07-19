@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -46,7 +45,7 @@ type OrderMessage struct {
 	Funds         string `json:"funds"`
 	ProductId     string `json:"productId"`
 	Side          string `json:"side"`
-	OrderType     string `json:"orderType"`
+	OrderType     int64  `json:"orderType"`
 	CreatedAt     string `json:"createdAt"`
 	FillFees      string `json:"fillFees"`
 	FilledSize    string `json:"filledSize"`

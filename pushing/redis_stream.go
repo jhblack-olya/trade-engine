@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -43,6 +42,7 @@ func (s *redisStream) Start() {
 
 	_, err := redisClient.Ping().Result()
 	if err != nil {
+		models.RedisErrCh <- err
 		panic(err)
 	}
 
@@ -52,9 +52,26 @@ func (s *redisStream) Start() {
 			_, err := ps.Receive()
 			if err != nil {
 				log.Error(err)
+				models.RedisErrCh <- err
 				continue
 			}
 
+			/*	ps1 := redisClient.Subscribe(models.TopicBill)
+				_, err = ps1.Receive()
+				if err != nil {
+					log.Error(err)
+					models.RedisErrCh <- err
+					continue
+				}
+
+				ps2 := redisClient.Subscribe(models.TopicFill)
+				_, err = ps2.Receive()
+				if err != nil {
+					log.Error(err)
+					models.RedisErrCh <- err
+					continue
+				}
+			*/
 			for {
 				select {
 				case msg := <-ps.Channel():
@@ -75,7 +92,7 @@ func (s *redisStream) Start() {
 						Funds:         "0",
 						ProductId:     order.ProductId,
 						Side:          order.Side.String(),
-						OrderType:     order.Type.String(),
+						OrderType:     order.Type,
 						CreatedAt:     order.CreatedAt.Format(time.RFC3339),
 						FillFees:      order.FillFees.String(),
 						FilledSize:    order.FilledSize.String(),
@@ -94,6 +111,7 @@ func (s *redisStream) Start() {
 			_, err := ps.Receive()
 			if err != nil {
 				log.Error(err)
+				models.RedisErrCh <- err
 				continue
 			}
 

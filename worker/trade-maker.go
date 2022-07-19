@@ -1,5 +1,4 @@
-/*
-Copyright (C) 2021 Global Art Exchange, LLC (GAX). All Rights Reserved.
+/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -61,18 +60,20 @@ func (t *TradeMaker) OnDoneLog(log *matching.DoneLog, offset int64) {
 
 func (t *TradeMaker) OnMatchLog(log *matching.MatchLog, offset int64) {
 	t.tradeCh <- &models.Trade{
-		Id:           log.TradeId,
-		ProductId:    log.ProductId,
-		TakerOrderId: log.TakerOrderId,
-		MakerOrderId: log.MakerOrderId,
-		Price:        log.Price,
-		Size:         log.Size,
-		Side:         log.Side,
-		Time:         log.Time,
-		LogOffset:    offset,
-		LogSeq:       log.Sequence,
-		TakerArt:     log.TakerArt,
-		MakerArt:     log.MakerArt,
+		Id:              log.TradeId,
+		ProductId:       log.ProductId,
+		TakerOrderId:    log.TakerOrderId,
+		MakerOrderId:    log.MakerOrderId,
+		Price:           log.Price,
+		Size:            log.Size,
+		Side:            log.Side,
+		Time:            log.Time,
+		LogOffset:       offset,
+		LogSeq:          log.Sequence,
+		TakerArt:        log.TakerArt,
+		MakerArt:        log.MakerArt,
+		TakerExecutedAt: log.TakerExecutedAt,
+		MakerExecutedAt: log.MakerExecutedAt,
 	}
 }
 
