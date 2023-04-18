@@ -8,8 +8,11 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -170,15 +173,14 @@ type WebsocketClient struct {
 	CloseChan chan bool
 }
 
-var ClientConn map[int64]map[string]*WebsocketClient
+var ClientConn map[string]map[string]*WebsocketClient
 
-/*
 func GetLiveOrderBook(ctx *gin.Context) {
-	art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
-	if err != nil {
-		ctx.JSON(http.StatusForbidden, newMessageVo(err))
-		return
-	}
+	//art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
+	//if err != nil {
+	//	ctx.JSON(http.StatusForbidden, newMessageVo(err))
+	//	return
+	//}
 	userId := ctx.Query("user")
 	if userId == "" {
 		ctx.JSON(http.StatusForbidden, newMessageVo(errors.New("invalid user")))
@@ -193,7 +195,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 	if status == "open" {
 		//userClient[userId] = wsClient
 		models.Mu.Lock()
-		if userConn, ok := ClientConn[art]; ok {
+		if userConn, ok := ClientConn[product]; ok {
 			if _, ok1 := userConn[userId]; !ok1 {
 				ws, err := UpGrader.Upgrade(ctx.Writer, ctx.Request, nil)
 				if err != nil {
@@ -222,7 +224,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 
 			}
 		} else {
-			ClientConn[art] = make(map[string]*WebsocketClient)
+			ClientConn[product] = make(map[string]*WebsocketClient)
 			userClient := make(map[string]*WebsocketClient)
 			ws, err := UpGrader.Upgrade(ctx.Writer, ctx.Request, nil)
 			if err != nil {
@@ -233,24 +235,24 @@ func GetLiveOrderBook(ctx *gin.Context) {
 				Ws:        ws,
 				CloseChan: make(chan bool),
 			}
-			ClientConn[art] = userClient
+			ClientConn[product] = userClient
 		}
 		models.Mu.Unlock()
 		models.Trigger = make(chan string, 1)
 		models.Trigger <- product
 
 	}
-	go func(art int64, userId, product string) {
+	go func(userId, product string) {
 		models.Mu.Lock()
-		clsChan := ClientConn[art][userId].CloseChan
+		clsChan := ClientConn[product][userId].CloseChan
 		models.Mu.Unlock()
 		for {
 			select {
 			case val := <-models.Trigger:
-				if val !="" {
+				if val != "" {
 					totalAsk := decimal.Zero
 					totalBid := decimal.Zero
-					ask, bid, usdSpace := standalone.GetOrderBook(product, 0)
+					ask, bid, usdSpace := standalone.GetOrderBook(product)
 					resp := models.OrderBookResponse{}
 					//usedSpread:= askMin-bidMax
 					resp.UsdSpace = usdSpace
@@ -306,10 +308,10 @@ func GetLiveOrderBook(ctx *gin.Context) {
 				}
 			case <-clsChan:
 				models.Mu.Lock()
-				if conn, ok := ClientConn[art]; ok {
+				if conn, ok := ClientConn[product]; ok {
 					if userConn, ok := conn[userId]; ok {
 						userConn.Ws.Close()
-						delete(ClientConn[art], userId)
+						delete(ClientConn[product], userId)
 						close(models.UserChan[userId])
 						delete(models.UserChan, userId)
 						break
@@ -318,19 +320,20 @@ func GetLiveOrderBook(ctx *gin.Context) {
 				models.Mu.Unlock()
 			}
 		}
-	}(art, userId, product)
+	}(userId, product)
 
 }
 
 func CloseWebsocket(ctx *gin.Context) {
-	art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
-	if err != nil {
+	product := ctx.Query("product")
+	if product == "" {
+		err := errors.New("ws client connection not found")
 		ctx.JSON(http.StatusForbidden, newMessageVo(err))
 
 	}
 	userId := ctx.Query("user")
 	models.Mu.Lock()
-	conn, ok := ClientConn[art]
+	conn, ok := ClientConn[product]
 	models.Mu.Unlock()
 	if ok {
 		if userConn, ok := conn[userId]; ok {
@@ -338,4 +341,3 @@ func CloseWebsocket(ctx *gin.Context) {
 		}
 	}
 }
-*/

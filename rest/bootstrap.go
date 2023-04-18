@@ -19,8 +19,8 @@ func StartServer() {
 
 	log.Info("rest server ok")
 
-	//	wsServer := NewWsServer(gbeConfig.WSserver.Addr)
-	//	go wsServer.Start()
-	//	log.Info("websocket server ok")
+	wsServer := NewWsServer(gbeConfig.WSserver.Addr)
+	go wsServer.Start()
+	log.Info("websocket server ok")
 
 }
