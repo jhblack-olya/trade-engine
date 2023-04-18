@@ -10,7 +10,7 @@ import (
 	"gitlab.com/gae4/trade-engine/conf"
 )
 
-//StartServer for rest server initialization
+// StartServer for rest server initialization
 func StartServer() {
 	gbeConfig := conf.GetConfig()
 
@@ -19,8 +19,8 @@ func StartServer() {
 
 	log.Info("rest server ok")
 
-	wsServer := NewWsServer(gbeConfig.WSserver.Addr)
-	go wsServer.Start()
-	log.Info("websocket server ok")
+	//	wsServer := NewWsServer(gbeConfig.WSserver.Addr)
+	//	go wsServer.Start()
+	//	log.Info("websocket server ok")
 
 }

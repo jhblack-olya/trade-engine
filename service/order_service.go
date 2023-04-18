@@ -17,9 +17,9 @@ import (
 	"gitlab.com/gae4/trade-engine/models/mysql"
 )
 
-//PlaceOrder: adds order and bills to tables and pass order to matching engine
+// PlaceOrder: adds order and bills to tables and pass order to matching engine
 func PlaceOrder(userId int64, clientOid, productId string, orderType models.OrderType, side models.Side,
-	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string, art int64, commission, commissionPercent decimal.Decimal) (*models.Order, error) {
+	size, price, funds decimal.Decimal, expiresIn int64, backendOrderId string) (*models.Order, error) {
 	product, err := GetProductById(productId)
 	if err != nil {
 		return nil, err
@@ -61,15 +61,15 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		return nil, err
 	}
 
-	var holdCurrency string
-	var holdSize decimal.Decimal
+	//var holdCurrency string
+	//var holdSize decimal.Decimal
 	//var holdCommission decimal.Decimal
-	if side == models.SideBuy {
-		holdCurrency, holdSize = product.QuoteCurrency, funds
-		//	holdCommission = holdSize.Add(holdSize.Mul(holdSize))
-	} else {
-		holdCurrency, holdSize = strconv.FormatInt(art, 10)+"_"+product.BaseCurrency, size
-	}
+	//if side == models.SideBuy {
+	//	holdCurrency, holdSize = product.QuoteCurrency, funds
+	//	//	holdCommission = holdSize.Add(holdSize.Mul(holdSize))
+	//} else {
+	//	holdCurrency, holdSize = strconv.FormatInt(art, 10)+"_"+product.BaseCurrency, size
+	//}
 
 	order := &models.Order{
 		ClientOid:      clientOid,
@@ -84,9 +84,6 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 		ExpiresIn:      expiresIn,
 		BackendOrderId: backendOrderId,
 		//	ArtName:        int64(artInt),
-		CommissionPercent: commissionPercent,
-		FillFees:          commission,
-		Art:               art,
 	}
 
 	db, err := mysql.SharedStore().BeginTx()
@@ -95,16 +92,15 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	}
 	defer func() { _ = db.Rollback() }()
 
-	err = HoldBalance(db, userId, holdCurrency, holdSize, models.BillTypeTrade, commission, product.QuoteCurrency)
-	if err != nil {
-		return nil, err
-	}
+	//err = HoldBalance(db, userId, holdCurrency, holdSize, models.BillTypeTrade, commission, product.QuoteCurrency)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	err = db.AddOrder(order)
 	if err != nil {
 		return nil, err
 	}
-	order.BackendOrderId = strconv.FormatInt(order.Id, 10)
 	return order, db.CommitTx()
 }
 
@@ -112,7 +108,7 @@ func GetOrderById(orderId int64) (*models.Order, error) {
 	return mysql.SharedStore().GetOrderById(orderId)
 }
 
-//ExecuteFill: updates fill table and adds delay bills
+// ExecuteFill: updates fill table and adds delay bills
 func ExecuteFill(orderId, timer int64, art int64, cancelledAt string) error {
 	db, err := mysql.SharedStore().BeginTx()
 	if err != nil {

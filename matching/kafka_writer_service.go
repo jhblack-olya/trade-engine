@@ -8,6 +8,7 @@ package matching
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -52,6 +53,7 @@ func (e *Engine) SubmitOrder(order *models.Order) {
 }
 
 func SubmitOrder(order *models.Order) {
+	fmt.Println("I am called")
 	buf, err := json.Marshal(order)
 	if err != nil {
 		log.Error(err.Error())

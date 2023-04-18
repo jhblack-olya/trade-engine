@@ -8,11 +8,8 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"log"
 	"net/http"
-	"sort"
 	"strconv"
 	"time"
 
@@ -58,10 +55,8 @@ func PlaceOrderAPI(ctx *gin.Context) {
 		size := decimal.NewFromFloat(req.Size)
 		price := decimal.NewFromFloat(req.Price)
 		funds := decimal.NewFromFloat(req.Funds)
-		commission := decimal.NewFromFloat(req.Commission)
-		commissionPercent := decimal.NewFromFloat(req.CommissionPercent)
 		order, err = service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-			side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art, commission, commissionPercent)
+			side, size, price, funds, req.ExpiresIn, req.BackendOrderId)
 
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err.Error())
@@ -177,6 +172,7 @@ type WebsocketClient struct {
 
 var ClientConn map[int64]map[string]*WebsocketClient
 
+/*
 func GetLiveOrderBook(ctx *gin.Context) {
 	art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
 	if err != nil {
@@ -190,7 +186,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 	}
 	product := ctx.Query("product")
 	if product == "" {
-		product = "ABT-USDT"
+		return
 	}
 	status := ctx.Query("status")
 
@@ -240,8 +236,8 @@ func GetLiveOrderBook(ctx *gin.Context) {
 			ClientConn[art] = userClient
 		}
 		models.Mu.Unlock()
-		models.Trigger = make(chan int64, 1)
-		models.Trigger <- art
+		models.Trigger = make(chan string, 1)
+		models.Trigger <- product
 
 	}
 	go func(art int64, userId, product string) {
@@ -251,10 +247,10 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		for {
 			select {
 			case val := <-models.Trigger:
-				if val > 0 {
+				if val !="" {
 					totalAsk := decimal.Zero
 					totalBid := decimal.Zero
-					ask, bid, usdSpace := standalone.GetOrderBook(product, val)
+					ask, bid, usdSpace := standalone.GetOrderBook(product, 0)
 					resp := models.OrderBookResponse{}
 					//usedSpread:= askMin-bidMax
 					resp.UsdSpace = usdSpace
@@ -342,3 +338,4 @@ func CloseWebsocket(ctx *gin.Context) {
 		}
 	}
 }
+*/

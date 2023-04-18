@@ -46,10 +46,10 @@ func (server *HttpServer) Start() {
 		private.POST("/api/account/create", CreateAccount)
 		private.PATCH("/api/account/update", UpdateAccount)
 		private.GET("/api/estimate", EstimateAmount)
-		private.GET("/api/websocket/close", CloseWebsocket)
+		//private.GET("/api/websocket/close", CloseWebsocket)
 	}
 	r.GET("/health", healthCheck())
-	r.GET("/orderbook", GetLiveOrderBook)
+	//r.GET("/orderbook", GetLiveOrderBook)
 
 	err := r.Run(server.addr)
 	if err != nil {
@@ -66,10 +66,10 @@ func (server *WsServer) Start() {
 
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	sockets := r.Group("/")
-	{
-		sockets.GET("/api/ws/orderbook", GetLiveOrderBook)
-	}
+	//	sockets := r.Group("/")
+	//	{
+	//		sockets.GET("/api/ws/orderbook", GetLiveOrderBook)
+	//	}
 	log.Info("Websocket starting at :: " + server.addr)
 
 	err := r.Run(server.addr)

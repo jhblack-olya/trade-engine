@@ -1,4 +1,6 @@
-/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
+/*
+	Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
+
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -40,7 +42,7 @@ type offsetOrder struct {
 	Order  *models.Order
 }
 
-//NewEngine Intitializes matching engine node
+// NewEngine Intitializes matching engine node
 func NewEngine(product *models.Product, orderReader OrderReader, logStore LogStore, snapshotStore SnapshotStore) *Engine {
 	e := &Engine{
 		productId:            product.Id,
@@ -76,8 +78,8 @@ func (e *Engine) Start() {
 	go e.countDownTimer()
 }
 
-//runFetcher: go routine responsible for continuously pulling order from kafka topic pushed from orderapi
-//and pushing into order channel
+// runFetcher: go routine responsible for continuously pulling order from kafka topic pushed from orderapi
+// and pushing into order channel
 func (e *Engine) runFetcher() {
 	var offset = e.orderOffset
 	if offset > 0 {
@@ -106,8 +108,9 @@ func (e *Engine) runFetcher() {
 			logger.Error(err)
 			continue
 		}
-		if _, ok := e.OrderBook.artDepths[order.Art]; !ok {
-			e.OrderBook.artDepths[order.Art] = e.OrderBook.NewArtDepth()
+		fmt.Println("order book art Depths ", e.OrderBook.artDepths)
+		if len(e.OrderBook.artDepths) == 0 {
+			e.OrderBook.artDepths = e.OrderBook.NewArtDepth()
 		}
 		if order.Type == models.OrderTypeLimit.Int() && order.ExpiresIn > 0 {
 			e.expiryCh <- &offsetOrder{offset, order}
@@ -122,7 +125,7 @@ func (e *Engine) runFetcher() {
 	}
 }
 
-//runApplier: Manages order execution
+// runApplier: Manages order execution
 func (e *Engine) runApplier() {
 	var orderOffset int64
 
@@ -155,7 +158,7 @@ func (e *Engine) runApplier() {
 	}
 }
 
-//runCommitter: generates sequence number for log, writes log data into kafka broker and approves snapshots
+// runCommitter: generates sequence number for log, writes log data into kafka broker and approves snapshots
 func (e *Engine) runCommitter() {
 	var seq = e.OrderBook.logSeq
 	var pending *Snapshot = nil
@@ -200,7 +203,7 @@ func (e *Engine) runCommitter() {
 	}
 }
 
-//runSnapshots: stores snapshots
+// runSnapshots: stores snapshots
 func (e *Engine) runSnapshots() {
 	// Order orderOffset at the last snapshot
 	orderOffset := e.orderOffset
@@ -235,20 +238,20 @@ func (e *Engine) restore(snapshot *Snapshot) {
 	e.OrderBook.Restore(&snapshot.OrderBookSnapshot)
 }
 
-//countDownTimer: times the order
+// countDownTimer: times the order
 func (e *Engine) countDownTimer() {
 	for {
 		select {
 		case o := <-e.expiryCh:
 			//extract order and method with time
-			depth := e.OrderBook.artDepths[o.Order.Art][o.Order.Side]
+			depth := e.OrderBook.artDepths[o.Order.Side]
 			go depth.timed(o, e)
 		}
 	}
 
 }
 
-//use depth
+// use depth
 func (d *depth) timed(o *offsetOrder, e *Engine) {
 	flag := 0
 	elapse := time.Duration(1) * time.Second
@@ -265,7 +268,7 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 
 				e.SubmitOrder(o.Order)
 				flag = 1
-				models.Trigger <- o.Order.Art
+				models.Trigger <- o.Order.ProductId
 
 			} else {
 				//	fmt.Println("order ", o.Order.Id, " expires in ", expiresIn)
@@ -288,7 +291,7 @@ func (d *depth) timed(o *offsetOrder, e *Engine) {
 
 func (e *Engine) GetLimitOrders(side models.Side, art int64, size decimal.Decimal) (decimal.Decimal, decimal.Decimal, decimal.Decimal) {
 	var estimateAmt, mostAvailableAmt decimal.Decimal
-	limitOrders := e.OrderBook.artDepths[art][side.Opposite()]
+	limitOrders := e.OrderBook.artDepths[side.Opposite()]
 	if limitOrders == nil {
 		log.Info("no orders available for art" + strconv.FormatInt(art, 10))
 		return decimal.Zero, decimal.Zero, decimal.Zero
@@ -329,7 +332,7 @@ func (e *Engine) GetLimitOrders(side models.Side, art int64, size decimal.Decima
 
 }
 
-func (e *Engine) LiveOrderBook(art int64) (map[string]decimal.Decimal, map[string]decimal.Decimal, decimal.Decimal) {
+func (e *Engine) LiveOrderBook() (map[string]decimal.Decimal, map[string]decimal.Decimal, decimal.Decimal) {
 	var (
 		bidMaxPrice decimal.Decimal
 		askMinPrice decimal.Decimal
@@ -339,8 +342,8 @@ func (e *Engine) LiveOrderBook(art int64) (map[string]decimal.Decimal, map[strin
 	)
 
 	flag := 0
-	askOrders := e.OrderBook.artDepths[art][models.SideSell]
-	bidOrders := e.OrderBook.artDepths[art][models.SideBuy]
+	askOrders := e.OrderBook.artDepths[models.SideSell]
+	bidOrders := e.OrderBook.artDepths[models.SideBuy]
 
 	if askOrders != nil {
 		fmt.Println("ask block")

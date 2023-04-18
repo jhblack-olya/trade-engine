@@ -88,7 +88,7 @@ type PendingLog struct {
 	Side          models.Side
 }
 
-func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64, takerArt, makerArt int64, takerMatchedAt, makermatchedAt string) *MatchLog {
+func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, makerOrder *BookOrder, price, size decimal.Decimal, takerTimer, makerTimer int64, takerMatchedAt, makermatchedAt string) *MatchLog {
 	return &MatchLog{
 		Base:                Base{LogTypeMatch, logSeq, productId, time.Now()},
 		TradeId:             tradeSeq,
@@ -103,13 +103,11 @@ func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, mak
 		MakerExpiresIn:      makerTimer,
 		TakerBackendOrderId: takerOrder.BackendOrderId,
 		MakerBackendOrderId: makerOrder.BackendOrderId,
-		TakerArt:            takerArt,
-		MakerArt:            makerArt,
 		TakerExecutedAt:     takerMatchedAt,
 		MakerExecutedAt:     makermatchedAt,
 	}
 }
-func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64, art int64) *OpenLog {
+func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64) *OpenLog {
 	return &OpenLog{
 		Base:           Base{LogTypeOpen, logSeq, productId, time.Now()},
 		OrderId:        takerOrder.OrderId,
@@ -118,11 +116,10 @@ func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int
 		Side:           takerOrder.Side,
 		ExpiresIn:      timer,
 		BackendOrderId: takerOrder.BackendOrderId,
-		Art:            art,
 	}
 }
 
-func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, art int64, executedValue, filledSize decimal.Decimal, timeStamp string) *DoneLog {
+func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize decimal.Decimal, reason models.DoneReason, timer int64, executedValue, filledSize decimal.Decimal, timeStamp string) *DoneLog {
 	var (
 		cancelledTime string
 		matchedAt     string
@@ -142,7 +139,6 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 		Side:           order.Side,
 		ExpiresIn:      timer,
 		BackendOrderId: order.BackendOrderId,
-		Art:            art,
 		ExecutedValue:  executedValue,
 		FilledSize:     filledSize,
 		CancelledAt:    cancelledTime,

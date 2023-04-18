@@ -42,6 +42,7 @@ func NewBinLogStream() *BinLogStream {
 func (s *BinLogStream) OnRow(e *canal.RowsEvent) error {
 	switch e.Table.Name {
 	case "orderbooks": //"g_order":
+		log.Println("binloger order book action ", e.Action)
 		if e.Action == "delete" {
 			return nil
 		}

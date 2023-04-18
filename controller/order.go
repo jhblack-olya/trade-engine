@@ -1,4 +1,6 @@
-/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
+/*
+	Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
+
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -29,6 +31,7 @@ func ProcessOrder() {
 
 	e := &BackendOrder{orderReader: orderReader}
 	readLag, err := e.orderReader.ReadLag()
+	log.Println("read Lag backend order ", readLag)
 	if readLag > 0 {
 		readLag = readLag - 1
 	}
@@ -45,6 +48,7 @@ func (b *BackendOrder) Start() {
 
 func (b *BackendOrder) runFetcher() {
 	var offset = b.orderOffset
+	log.Println("Backend Order offset ", offset)
 	if offset > 0 {
 		offset += 1
 	}
@@ -86,10 +90,8 @@ func (b *BackendOrder) PlaceOrder(req *models.PlaceOrderRequest) {
 		size := decimal.NewFromFloat(req.Size)
 		price := decimal.NewFromFloat(req.Price)
 		funds := decimal.NewFromFloat(req.Funds)
-		commission := decimal.NewFromFloat(req.Commission)
-		commissionPercent := decimal.NewFromFloat(req.CommissionPercent)
 		order, err = service.PlaceOrder(req.UserId, req.ClientOid, req.ProductId, orderType,
-			side, size, price, funds, req.ExpiresIn, req.BackendOrderId, req.Art, commission, commissionPercent)
+			side, size, price, funds, req.ExpiresIn, req.BackendOrderId)
 
 		if err != nil {
 			return

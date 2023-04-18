@@ -1,4 +1,6 @@
-/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
+/*
+	Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
+
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -23,10 +25,10 @@ func GetEstimate(productId string, size decimal.Decimal, art int64, side models.
 	return e.GetLimitOrders(side, art, size)
 }
 
-func GetOrderBook(productId string, art int64) (map[string]decimal.Decimal, map[string]decimal.Decimal, decimal.Decimal) {
+func GetOrderBook(productId string) (map[string]decimal.Decimal, map[string]decimal.Decimal, decimal.Decimal) {
 	e, ok := matching.MatchEngine[productId]
 	if !ok {
 		return nil, nil, decimal.Zero
 	}
-	return e.LiveOrderBook(art)
+	return e.LiveOrderBook()
 }

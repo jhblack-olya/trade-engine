@@ -20,7 +20,7 @@ var CommonError map[string]string
 var RedisErrCh chan error
 var MysqlErrCh chan error
 var KafkaErrCh chan error
-var Trigger chan int64
+var Trigger chan string
 var UserChan map[string]chan int64
 var Mu *sync.Mutex
 
@@ -169,28 +169,30 @@ type Product struct {
 	QuoteIncrement float64
 }
 
-/*type Order struct {
-	Id             int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	ProductId      string
-	UserId         int64
-	ClientOid      string
-	Size           decimal.Decimal `sql:"type:decimal(32,16);"`
-	Funds          decimal.Decimal `sql:"type:decimal(32,16);"`
-	FilledSize     decimal.Decimal `sql:"type:decimal(32,16);"`
-	ExecutedValue  decimal.Decimal `sql:"type:decimal(32,16);"`
-	Price          decimal.Decimal `sql:"type:decimal(32,16);"`
-	FillFees       decimal.Decimal `sql:"type:decimal(32,16);"`
-	Type           OrderType
-	Side           Side
-	TimeInForce    string
-	Status         OrderStatus
-	Settled        bool
-	ExpiresIn      int64
-	BackendOrderId string
-	Art            string
-}*/
+/*
+	type Order struct {
+		Id             int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
+		CreatedAt      time.Time
+		UpdatedAt      time.Time
+		ProductId      string
+		UserId         int64
+		ClientOid      string
+		Size           decimal.Decimal `sql:"type:decimal(32,16);"`
+		Funds          decimal.Decimal `sql:"type:decimal(32,16);"`
+		FilledSize     decimal.Decimal `sql:"type:decimal(32,16);"`
+		ExecutedValue  decimal.Decimal `sql:"type:decimal(32,16);"`
+		Price          decimal.Decimal `sql:"type:decimal(32,16);"`
+		FillFees       decimal.Decimal `sql:"type:decimal(32,16);"`
+		Type           OrderType
+		Side           Side
+		TimeInForce    string
+		Status         OrderStatus
+		Settled        bool
+		ExpiresIn      int64
+		BackendOrderId string
+		Art            string
+	}
+*/
 type GFill struct {
 	Id         int64 `gorm:"column:id;primary_key;AUTO_INCREMENT"`
 	CreatedAt  time.Time
