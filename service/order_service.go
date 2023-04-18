@@ -70,19 +70,19 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	//} else {
 	//	holdCurrency, holdSize = strconv.FormatInt(art, 10)+"_"+product.BaseCurrency, size
 	//}
-
+	orderID, _ := strconv.ParseInt(backendOrderId, 10, 64)
 	order := &models.Order{
-		ClientOid:      clientOid,
-		UserId:         userId,
-		ProductId:      productId,
-		Side:           side,
-		Size:           size,
-		Funds:          funds,
-		Price:          price,
-		Status:         models.OrderStatusNew,
-		Type:           orderType.Int(),
-		ExpiresIn:      expiresIn,
-		BackendOrderId: backendOrderId,
+		ClientOid: clientOid,
+		UserId:    userId,
+		ProductId: productId,
+		Side:      side,
+		Size:      size,
+		Funds:     funds,
+		Price:     price,
+		Status:    models.OrderStatusNew,
+		Type:      orderType.Int(),
+		ExpiresIn: expiresIn,
+		Id:        orderID,
 		//	ArtName:        int64(artInt),
 	}
 
