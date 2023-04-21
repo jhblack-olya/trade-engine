@@ -191,7 +191,8 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		return
 	}
 	status := ctx.Query("status")
-
+	fmt.Println("product ", product)
+	fmt.Println("user ", userId)
 	if status == "open" {
 		//userClient[userId] = wsClient
 		models.Mu.Lock()
@@ -245,6 +246,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 	go func(userId, product string) {
 		models.Mu.Lock()
 		clsChan := ClientConn[product][userId].CloseChan
+		go ClientConn[product][userId].checkConn(userId)
 		models.Mu.Unlock()
 		for {
 			select {
@@ -253,6 +255,8 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					totalAsk := decimal.Zero
 					totalBid := decimal.Zero
 					ask, bid, usdSpace := standalone.GetOrderBook(product)
+					fmt.Println("ask ", ask)
+					fmt.Println("bid ", bid)
 					resp := models.OrderBookResponse{}
 					//usedSpread:= askMin-bidMax
 					resp.UsdSpace = usdSpace
@@ -312,7 +316,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 					if userConn, ok := conn[userId]; ok {
 						userConn.Ws.Close()
 						delete(ClientConn[product], userId)
-						close(models.UserChan[userId])
+						//						close(models.UserChan[userId])
 						delete(models.UserChan, userId)
 						break
 					}
@@ -338,6 +342,18 @@ func CloseWebsocket(ctx *gin.Context) {
 	if ok {
 		if userConn, ok := conn[userId]; ok {
 			userConn.CloseChan <- true
+		}
+	}
+}
+
+func (c *WebsocketClient) checkConn(userId string) {
+	for {
+		fmt.Println("connection userid")
+		_, _, err := c.Ws.ReadMessage()
+		if err != nil {
+			fmt.Println("error read message: " + err.Error())
+			c.CloseChan <- true
+			break
 		}
 	}
 }

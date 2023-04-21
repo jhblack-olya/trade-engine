@@ -9,7 +9,6 @@ package controller
 import (
 	"log"
 
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	logger "github.com/siddontang/go-log/log"
 	"gitlab.com/gae4/trade-engine/conf"
@@ -81,12 +80,12 @@ func (b *BackendOrder) PlaceOrder(req *models.PlaceOrderRequest) {
 			orderType = models.OrderTypeLimit
 		}
 
-		if len(req.ClientOid) > 0 {
+		/*if len(req.ClientOid) > 0 {
 			_, err := uuid.Parse(req.ClientOid)
 			if err != nil {
 				return
 			}
-		}
+		}*/
 		size := decimal.NewFromFloat(req.Size)
 		price := decimal.NewFromFloat(req.Price)
 		funds := decimal.NewFromFloat(req.Funds)
