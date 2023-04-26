@@ -72,7 +72,6 @@ func PlaceOrder(userId int64, clientOid, productId string, orderType models.Orde
 	//}
 	orderID, _ := strconv.ParseInt(backendOrderId, 10, 64)
 	order := &models.Order{
-		ClientOid: clientOid,
 		UserId:    userId,
 		ProductId: productId,
 		Side:      side,

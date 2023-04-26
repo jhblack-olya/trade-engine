@@ -146,13 +146,12 @@ func newDoneLog(logSeq int64, productId string, order *BookOrder, remainingSize 
 	}
 }
 
-func newPendingLog(logSeq int64, productId string, side models.Side, remainingSize decimal.Decimal, orderId, orderType, art int64) *PendingLog {
+func newPendingLog(logSeq int64, productId string, side models.Side, remainingSize decimal.Decimal, orderId, orderType int64) *PendingLog {
 	return &PendingLog{
 		Base:          Base{LogTypePending, logSeq, productId, time.Now()},
 		OrderId:       orderId,
 		RemainingSize: remainingSize,
 		Side:          side,
-		Art:           art,
 		OrderType:     orderType,
 	}
 }

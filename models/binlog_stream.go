@@ -120,18 +120,15 @@ func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest inte
 			switch colName {
 			case "UserId":
 				col = "user"
-			case "ArtName":
-				col = "art"
-			case "BackendOrderId":
-				col = "orderId"
+
 			case "Size":
-				col = "artBits"
+				col = "size"
 			case "Funds":
-				col = "totalAmount"
+				col = "funds"
 			case "FilledSize":
-				col = "filledArtBits"
+				col = "filled_size"
 			case "ExecutedValue":
-				col = "filledAmount"
+				col = "executed_value"
 			case "FillFees":
 				col = "commission"
 			case "Type":
@@ -142,10 +139,10 @@ func (s *BinLogStream) parseRow(e *canal.RowsEvent, row []interface{}, dest inte
 				col = "executedAt"
 			case "DeletedAt":
 				col = "deletedAt"
-			case "UserRole":
-				col = "userRole"
-			case "CommissionPercent":
-				col = "commissionPercent"
+				//	case "UserRole":
+				//		col = "userRole"
+				//	case "CommissionPercent":
+				//		col = "commissionPercent"
 			default:
 				col = utils.SnakeCase(colName)
 			}

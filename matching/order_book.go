@@ -95,17 +95,15 @@ func (o *orderBook) nextTradeSeq() int64 {
 }
 func newBookOrder(order *models.Order) *BookOrder {
 	return &BookOrder{
-		OrderId:        order.Id,
-		Size:           order.Size,
-		Funds:          order.Funds,
-		Price:          order.Price,
-		Side:           order.Side,
-		Type:           order.Type,
-		ClientOid:      order.ClientOid,
-		ExpiresIn:      order.ExpiresIn,
-		BackendOrderId: order.BackendOrderId,
-		ProductId:      order.ProductId,
-		UserId:         order.UserId,
+		OrderId:   order.Id,
+		Size:      order.Size,
+		Funds:     order.Funds,
+		Price:     order.Price,
+		Side:      order.Side,
+		Type:      order.Type,
+		ExpiresIn: order.ExpiresIn,
+		ProductId: order.ProductId,
+		UserId:    order.UserId,
 	}
 }
 
@@ -338,7 +336,7 @@ func (o *orderBook) CancelOrder(order *models.Order) (logs []Log) {
 	}
 	var doneLog *DoneLog
 	if remainingSize.GreaterThan(decimal.Zero) && order.Size.GreaterThan(remainingSize) {
-		pendingLog := newPendingLog(o.nextLogSeq(), o.product.Id, order.Side, remainingSize, order.Id, order.Type, order.Art)
+		pendingLog := newPendingLog(o.nextLogSeq(), o.product.Id, order.Side, remainingSize, order.Id, order.Type)
 		logs = append(logs, pendingLog)
 		doneLog = newDoneLog(o.nextLogSeq(), o.product.Id, bookOrder, remainingSize, models.DoneReasonPartial, order.ExpiresIn, decimal.Zero, decimal.Zero, cancelledAt)
 	} else if order.Size.Equal(remainingSize) {
