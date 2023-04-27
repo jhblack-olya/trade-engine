@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -171,10 +172,148 @@ var UpGrader = websocket.Upgrader{
 type WebsocketClient struct {
 	Ws        *websocket.Conn
 	CloseChan chan bool
+	Trigger   chan string
 }
 
 var ClientConn map[string]map[string]*WebsocketClient
+var ClientConn1 sync.Map
 
+func createConn(ctx *gin.Context) *WebsocketClient {
+	ws, err := UpGrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		log.Println("error get connection")
+		log.Fatal(err)
+	}
+	rsp := &WebsocketClient{
+		Ws:        ws,
+		CloseChan: make(chan bool),
+		Trigger:   make(chan string),
+	}
+	return rsp
+}
+
+func Bridge() {
+	for {
+		select {
+		case val := <-models.Trigger:
+			fmt.Println("Value recieved from trigger ", val)
+			if userConn, ok := ClientConn1.Load(val); ok {
+				for _, ws := range userConn.(map[string]*WebsocketClient) {
+					ws.Trigger <- val
+				}
+			}
+		}
+
+	}
+}
+func (ws *WebsocketClient) processWSRequest(userId, product string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	go ws.checkConn(userId)
+	for {
+		select {
+		case val := <-ws.Trigger:
+			if val != "" {
+				totalAsk := decimal.Zero
+				totalBid := decimal.Zero
+				ask, bid, usdSpace := standalone.GetOrderBook(product)
+				fmt.Println("ask ", ask)
+				fmt.Println("bid ", bid)
+				resp := models.OrderBookResponse{}
+				//usedSpread:= askMin-bidMax
+				resp.UsdSpace = usdSpace
+				//ask == sell == red
+				for key, val := range ask {
+					k, _ := decimal.NewFromString(key)
+
+					record := models.Record{
+						Price:    k,
+						Quantity: val,
+					}
+					totalAsk = totalAsk.Add(val)
+					resp.Ask = append(resp.Ask, record)
+				}
+				//bid == buy == green
+				for key, val := range bid {
+					k, _ := decimal.NewFromString(key)
+					record := models.Record{
+						Price:    k,
+						Quantity: val,
+					}
+					totalBid = totalBid.Add(val)
+					resp.Bid = append(resp.Bid, record)
+
+				}
+				sort.Slice(resp.Ask, func(i, j int) bool {
+					return resp.Ask[i].Price.GreaterThan(resp.Ask[j].Price)
+
+				})
+				sort.Slice(resp.Bid, func(i, j int) bool {
+					return resp.Bid[i].Price.GreaterThan(resp.Bid[j].Price)
+
+				})
+
+				resp.TotalASk = totalAsk
+				resp.TotalBid = totalBid
+				fmt.Println("Response \n\n%+v\n ", resp)
+				err := ws.Ws.WriteJSON(&resp)
+				if err != nil {
+					log.Println("error write json: " + err.Error())
+				}
+			} else {
+				break
+			}
+		case <-ws.CloseChan:
+			ws.Ws.Close()
+			usr, _ := ClientConn1.Load(product)
+			delete(usr.(map[string]*WebsocketClient), userId)
+			//			close(ws.CloseChan)
+			break
+		}
+	}
+}
+
+func GetLiveOrderBook(ctx *gin.Context) {
+	var userConn map[string]*WebsocketClient
+	userId := ctx.Query("user")
+	if userId == "" {
+		ctx.JSON(http.StatusForbidden, newMessageVo(errors.New("invalid user")))
+		return
+	}
+	product := ctx.Query("product")
+	if product == "" {
+		ctx.JSON(http.StatusForbidden, newMessageVo(errors.New("invalid product")))
+		return
+	}
+	wg := &sync.WaitGroup{}
+	if _, ok := ClientConn1.Load(product); !ok {
+		userConn = make(map[string]*WebsocketClient)
+		userConn[userId] = createConn(ctx)
+		ClientConn1.Store(product, userConn)
+		wg.Add(1)
+		go userConn[userId].processWSRequest(userId, product, wg)
+		userConn[userId].Trigger <- product
+	} else {
+		if usr, ok := ClientConn1.Load(product); ok {
+			userConn = usr.(map[string]*WebsocketClient)
+			if _, ok := userConn[userId]; !ok {
+				userConn[userId] = createConn(ctx)
+				wg.Add(1)
+				go userConn[userId].processWSRequest(userId, product, wg)
+				fmt.Println("I am here ", product)
+				userConn[userId].Trigger <- product
+			} else {
+				fmt.Println("User connection exist")
+				userConn[userId].Trigger <- product
+			}
+		}
+	}
+	//wg.Add(1)
+	//go userConn[userId].processWSRequest(userId, product, wg)
+
+	wg.Wait()
+}
+
+/*
 func GetLiveOrderBook(ctx *gin.Context) {
 	//art, err := strconv.ParseInt(ctx.Query("art"), 10, 64)
 	//if err != nil {
@@ -326,7 +465,7 @@ func GetLiveOrderBook(ctx *gin.Context) {
 		}
 	}(userId, product)
 
-}
+}*/
 
 func CloseWebsocket(ctx *gin.Context) {
 	product := ctx.Query("product")
@@ -348,10 +487,10 @@ func CloseWebsocket(ctx *gin.Context) {
 
 func (c *WebsocketClient) checkConn(userId string) {
 	for {
-		fmt.Println("connection userid")
+		fmt.Println("connection userid ", userId)
 		_, _, err := c.Ws.ReadMessage()
 		if err != nil {
-			fmt.Println("error read message: " + err.Error())
+			log.Println(err.Error())
 			c.CloseChan <- true
 			break
 		}

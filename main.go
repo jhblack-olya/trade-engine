@@ -32,6 +32,7 @@ func main() {
 	models.MysqlErrCh = make(chan error, 10)
 	models.KafkaErrCh = make(chan error, 10)
 	rest.ClientConn = make(map[string]map[string]*rest.WebsocketClient)
+	models.Trigger = make(chan string, 4)
 	models.Mu = new(sync.Mutex)
 	go func() {
 		for {
@@ -67,7 +68,7 @@ func main() {
 		worker.NewFillMaker(matching.NewKafkaLogReader("fillMaker", product.Id, gbeConfig.Kafka.Brokers)).Start()
 		worker.NewTradeMaker(matching.NewKafkaLogReader("tradeMaker", product.Id, gbeConfig.Kafka.Brokers)).Start()
 	}
-
+	go rest.Bridge()
 	rest.StartServer()
 	select {}
 }
