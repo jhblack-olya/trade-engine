@@ -29,7 +29,6 @@ services:
     build: .
     ports:
       - 28851:8011
-    restart: always
     depends_on:
       - db
     networks:
@@ -43,7 +42,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-mysql
-    restart: always
     networks:
       - gax-dev-nw
     environment:
