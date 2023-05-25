@@ -6,6 +6,8 @@ To obtain a license write to legal@gax.llc
 package worker
 
 import (
+	"fmt"
+
 	"github.com/pingcap/log"
 	"gitlab.com/gae4/trade-engine/matching"
 	"gitlab.com/gae4/trade-engine/models"
@@ -20,8 +22,9 @@ type FillMaker struct {
 	logSeq    int64
 }
 
-//NewFillMaker: pushes filled order to database log stream
+// NewFillMaker: pushes filled order to database log stream
 func NewFillMaker(logReader matching.LogReader) *FillMaker {
+	fmt.Println("New Fill Maker called")
 	t := &FillMaker{
 		fillCh:    make(chan *models.Fill, 1000),
 		logReader: logReader,
@@ -31,6 +34,7 @@ func NewFillMaker(logReader matching.LogReader) *FillMaker {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("last fill ", lastFill)
 	if lastFill != nil {
 		t.logOffset = lastFill.LogOffset
 		t.logSeq = lastFill.LogSeq

@@ -163,6 +163,7 @@ func (e *Engine) runCommitter() {
 	for {
 		select {
 		case log := <-e.logCh:
+			fmt.Println("log.GetSeq() ", log.GetSeq(), " <= ", "seq= ", seq)
 			if log.GetSeq() <= seq {
 				logger.Info("discard log seq=%v", seq)
 				continue

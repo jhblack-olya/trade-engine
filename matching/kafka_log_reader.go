@@ -1,4 +1,6 @@
-/* Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
+/*
+	Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
+
 You may not use, distribute and modify this code without a license;
 To obtain a license write to legal@gax.llc
 */
@@ -7,6 +9,7 @@ package matching
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/segmentio/kafka-go"
 	logger "github.com/siddontang/go-log/log"
@@ -62,6 +65,8 @@ func (r *KafkaLogReader) Run(seq, offset int64) {
 		if err != nil {
 			panic(err)
 		}
+		fmt.Println("base.Sequnce = ", base.Sequence, " from kafka log")
+		fmt.Println("last Sequnce = ", lastSeq, " from last fill")
 
 		if base.Sequence <= lastSeq {
 			logger.Info("%v:%v discard log :%+v", r.productId, r.readerId, base)

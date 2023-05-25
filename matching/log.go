@@ -6,6 +6,7 @@ To obtain a license write to legal@gax.llc
 package matching
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -108,6 +109,7 @@ func newMatchLog(logSeq int64, productId string, tradeSeq int64, takerOrder, mak
 	}
 }
 func newOpenLog(logSeq int64, productId string, takerOrder *BookOrder, timer int64) *OpenLog {
+	fmt.Println("log seq achived by calling next log seq for open order ", logSeq)
 	return &OpenLog{
 		Base:           Base{LogTypeOpen, logSeq, productId, time.Now()},
 		OrderId:        takerOrder.OrderId,
