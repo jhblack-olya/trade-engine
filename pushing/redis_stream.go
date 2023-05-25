@@ -56,22 +56,6 @@ func (s *redisStream) Start() {
 				continue
 			}
 
-			/*	ps1 := redisClient.Subscribe(models.TopicBill)
-				_, err = ps1.Receive()
-				if err != nil {
-					log.Error(err)
-					models.RedisErrCh <- err
-					continue
-				}
-
-				ps2 := redisClient.Subscribe(models.TopicFill)
-				_, err = ps2.Receive()
-				if err != nil {
-					log.Error(err)
-					models.RedisErrCh <- err
-					continue
-				}
-			*/
 			for {
 				select {
 				case msg := <-ps.Channel():

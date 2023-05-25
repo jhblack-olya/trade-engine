@@ -1,9 +1,3 @@
-/*
-	Copyright (C) 2021-2022 Global Art Exchange, LLC ("GAX"). All Rights Reserved.
-
-You may not use, distribute and modify this code without a license;
-To obtain a license write to legal@gax.llc
-*/
 package matching
 
 import (
@@ -206,41 +200,6 @@ func (e *Engine) runCommitter() {
 	}
 }
 
-// runSnapshots: stores snapshots
-func (e *Engine) runSnapshots() {
-	// Order orderOffset at the last snapshot
-	orderOffset := e.orderOffset
-	for {
-		select {
-		case <-time.After(30 * time.Second):
-			// make a new snapshot request
-			e.snapshotReqCh <- &Snapshot{
-				OrderOffset: orderOffset,
-			}
-
-		case snapshot := <-e.snapshotCh:
-			// store snapshot
-			err := e.snapshotStore.Store(snapshot)
-			if err != nil {
-				logger.Warnf("store snapshot failed: %v", err)
-				continue
-			}
-			logger.Infof("new snapshot stored :product=%v OrderOffset=%v LogSeq=%v",
-				e.productId, snapshot.OrderOffset, snapshot.OrderBookSnapshot.LogSeq)
-
-			// update offset for next snapshot request
-			orderOffset = snapshot.OrderOffset
-		}
-	}
-}
-
-// restore: restores orders from snapshot to order book
-func (e *Engine) restore(snapshot *Snapshot) {
-	logger.Infof("restoring: %+v", *snapshot)
-	e.orderOffset = snapshot.OrderOffset
-	e.OrderBook.Restore(&snapshot.OrderBookSnapshot)
-}
-
 // countDownTimer: times the order
 func (e *Engine) countDownTimer() {
 	for {
@@ -405,4 +364,39 @@ func (e *Engine) LiveOrderBook() (map[string]decimal.Decimal, map[string]decimal
 	usdSpace = askMinPrice.Sub(bidMaxPrice)
 	return askDepth, bidDepth, usdSpace
 
+}
+
+// runSnapshots: stores snapshots
+func (e *Engine) runSnapshots() {
+	// Order orderOffset at the last snapshot
+	orderOffset := e.orderOffset
+	for {
+		select {
+		case <-time.After(30 * time.Second):
+			// make a new snapshot request
+			e.snapshotReqCh <- &Snapshot{
+				OrderOffset: orderOffset,
+			}
+
+		case snapshot := <-e.snapshotCh:
+			// store snapshot
+			err := e.snapshotStore.Store(snapshot)
+			if err != nil {
+				logger.Warnf("store snapshot failed: %v", err)
+				continue
+			}
+			logger.Infof("new snapshot stored :product=%v OrderOffset=%v LogSeq=%v",
+				e.productId, snapshot.OrderOffset, snapshot.OrderBookSnapshot.LogSeq)
+
+			// update offset for next snapshot request
+			orderOffset = snapshot.OrderOffset
+		}
+	}
+}
+
+// restore: restores orders from snapshot to order book
+func (e *Engine) restore(snapshot *Snapshot) {
+	logger.Infof("restoring: %+v", *snapshot)
+	e.orderOffset = snapshot.OrderOffset
+	e.OrderBook.Restore(&snapshot.OrderBookSnapshot)
 }
