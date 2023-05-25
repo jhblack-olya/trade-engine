@@ -149,7 +149,6 @@ services:
   #   #   - zookeeper
 ##########################################
   dozzle:
-    container_name: dozzle
     image: amir20/dozzle:latest
     container_name: "gax-dev-logs"
     volumes:
