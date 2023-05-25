@@ -133,9 +133,12 @@ func (e *Engine) runApplier() {
 		select {
 		case offsetOrder := <-e.orderCh:
 			var logs []Log
+			fmt.Println("order fetched ", offsetOrder.Order)
+
 			if offsetOrder.Order.Status == models.OrderStatusCancelling {
 				logs = e.OrderBook.CancelOrder(offsetOrder.Order)
 			} else {
+				fmt.Println("order getting passed to applyorder ", offsetOrder.Order)
 				logs = e.OrderBook.ApplyOrder(offsetOrder.Order)
 			}
 			for _, log := range logs {
