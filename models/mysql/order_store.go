@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/models"
 )
 
 func (s *Store) AddOrder(order *models.Order) error {

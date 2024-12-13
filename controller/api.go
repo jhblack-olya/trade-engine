@@ -4,7 +4,7 @@ To obtain a license write to legal@gax.llc
 */
 package controller
 
-import "gitlab.com/gae4/trade-engine/models"
+import "gitlab.com/jhblack-olya/trade-engine/models"
 
 type OrderReader interface {
 	SetOffset(int64) error

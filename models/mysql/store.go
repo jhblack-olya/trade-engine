@@ -13,8 +13,8 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/prometheus/common/log"
-	"gitlab.com/gae4/trade-engine/conf"
-	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/conf"
+	"gitlab.com/jhblack-olya/trade-engine/models"
 )
 
 var gdb *gorm.DB

@@ -12,8 +12,8 @@ import (
 
 	"github.com/prometheus/common/log"
 	"github.com/shopspring/decimal"
-	"gitlab.com/gae4/trade-engine/models"
-	"gitlab.com/gae4/trade-engine/models/mysql"
+	"gitlab.com/jhblack-olya/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/models/mysql"
 )
 
 func ExecuteBill(userId int64, currency string) error {

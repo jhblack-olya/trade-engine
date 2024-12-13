@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/models"
 )
 
 func (s *Store) AddBills(bills []*models.Bill) error {

@@ -7,7 +7,7 @@ package rest
 
 import (
 	"github.com/siddontang/go-log/log"
-	"gitlab.com/gae4/trade-engine/conf"
+	"gitlab.com/jhblack-olya/trade-engine/conf"
 )
 
 // StartServer for rest server initialization

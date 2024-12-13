@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/pingcap/log"
-	"gitlab.com/gae4/trade-engine/conf"
-	"gitlab.com/gae4/trade-engine/models"
-	"gitlab.com/gae4/trade-engine/service"
+	"gitlab.com/jhblack-olya/trade-engine/conf"
+	"gitlab.com/jhblack-olya/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/service"
 )
 
 const fillWorkerNum = 10

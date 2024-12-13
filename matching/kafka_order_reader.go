@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 
 	"github.com/segmentio/kafka-go"
-	"gitlab.com/gae4/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/models"
 )
 
 const (

@@ -13,9 +13,12 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/siddontang/go-log/log"
-	"gitlab.com/gae4/trade-engine/conf"
-	"gitlab.com/gae4/trade-engine/models"
-	"gitlab.com/gae4/trade-engine/utils"
+	//"gitlab.com/jhblack-olya/trade-engine/conf"
+	//"gitlab.com/jhblack-olya/trade-engine/models"
+	//"gitlab.com/jhblack-olya/trade-engine/utils"
+   "github.com/jhblack-olya/trade-engine/models"
+   "github.com/jhblack-olya/trade-engine/conf"
+   "github.com/jhblack-olya/trade-engine/utils"
 )
 
 type redisStream struct {

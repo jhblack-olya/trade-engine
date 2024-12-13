@@ -98,8 +98,8 @@ services:
     restart: always
     networks:
       - "gax-dev-nw"
-    # ports:
-    #   - 9092:9092
+    ports:
+       - 9092:9092
     volumes:
       - ./docker_kafka_data:/bitnami
     environment:
@@ -158,8 +158,6 @@ services:
 ############################################
 networks:
   gax-dev-nw:
-    external:
-      name: 'gax-dev-nw'
 
 # volumes:
 #   docker_data_redis:

@@ -11,11 +11,11 @@ import (
 
 	"github.com/shopspring/decimal"
 	logger "github.com/siddontang/go-log/log"
-	"gitlab.com/gae4/trade-engine/conf"
-	"gitlab.com/gae4/trade-engine/matching"
-	"gitlab.com/gae4/trade-engine/models"
-	"gitlab.com/gae4/trade-engine/models/mysql"
-	"gitlab.com/gae4/trade-engine/service"
+	"gitlab.com/jhblack-olya/trade-engine/conf"
+	"gitlab.com/jhblack-olya/trade-engine/matching"
+	"gitlab.com/jhblack-olya/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/models/mysql"
+	"gitlab.com/jhblack-olya/trade-engine/service"
 )
 
 type BackendOrder struct {

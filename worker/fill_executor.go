@@ -12,9 +12,9 @@ import (
 	"github.com/go-redis/redis"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/siddontang/go/log"
-	"gitlab.com/gae4/trade-engine/conf"
-	"gitlab.com/gae4/trade-engine/models"
-	"gitlab.com/gae4/trade-engine/service"
+	"gitlab.com/jhblack-olya/trade-engine/conf"
+	"gitlab.com/jhblack-olya/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/service"
 )
 
 type FillExecutor struct {

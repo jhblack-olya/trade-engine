@@ -22,12 +22,12 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/kafka-go"
 	"github.com/shopspring/decimal"
-	"gitlab.com/gae4/trade-engine/conf"
-	"gitlab.com/gae4/trade-engine/matching"
-	"gitlab.com/gae4/trade-engine/models"
-	"gitlab.com/gae4/trade-engine/models/mysql"
-	"gitlab.com/gae4/trade-engine/service"
-	"gitlab.com/gae4/trade-engine/standalone"
+	"gitlab.com/jhblack-olya/trade-engine/conf"
+	"gitlab.com/jhblack-olya/trade-engine/matching"
+	"gitlab.com/jhblack-olya/trade-engine/models"
+	"gitlab.com/jhblack-olya/trade-engine/models/mysql"
+	"gitlab.com/jhblack-olya/trade-engine/service"
+	"gitlab.com/jhblack-olya/trade-engine/standalone"
 )
 
 func PlaceOrderAPI(ctx *gin.Context) {

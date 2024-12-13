@@ -36,4 +36,10 @@ docker\
 !.vscode/extensions.json
 *.code-workspace
 local-conf.json
-*.txt
+*.txtdocker_mysql_data
+docker_mysql_data git add .
+docker_mysql_data git add .
+docker_mysql_data git add .
+docker_mysql_data/ca-key.pem
+   
+docker_mysql_data git add .
