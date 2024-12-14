@@ -1,4 +1,4 @@
-module gitlab.com/jhblack-olya/trade-engine
+module github.com/jhblack-olya/trade-engine
 
 go 1.13
 

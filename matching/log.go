@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 type LogType string

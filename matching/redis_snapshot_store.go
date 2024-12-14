@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"gitlab.com/jhblack-olya/trade-engine/conf"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/conf"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 const (

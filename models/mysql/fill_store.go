@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 func (s *Store) GetUnsettledFillsByOrderId(orderId int64) ([]*models.Fill, error) {

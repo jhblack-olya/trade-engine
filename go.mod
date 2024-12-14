@@ -1,4 +1,4 @@
-module gitlab.com/jhblack-olya/trade-engine
+module github.com/jhblack-olya/trade-engine
 
 go 1.13
 
@@ -21,4 +21,5 @@ require (
 	github.com/siddontang/go-log v0.0.0-20190221022429-1e957dd83bed
 	github.com/sirupsen/logrus v1.4.1 // indirect
 	github.com/ugorji/go v1.1.7 // indirect
+ 
 )

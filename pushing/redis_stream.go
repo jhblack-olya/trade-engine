@@ -13,9 +13,9 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/siddontang/go-log/log"
-	//"gitlab.com/jhblack-olya/trade-engine/conf"
-	//"gitlab.com/jhblack-olya/trade-engine/models"
-	//"gitlab.com/jhblack-olya/trade-engine/utils"
+	//"github.com/jhblack-olya/trade-engine/conf"
+	//"github.com/jhblack-olya/trade-engine/models"
+	//"github.com/jhblack-olya/trade-engine/utils"
    "github.com/jhblack-olya/trade-engine/models"
    "github.com/jhblack-olya/trade-engine/conf"
    "github.com/jhblack-olya/trade-engine/utils"

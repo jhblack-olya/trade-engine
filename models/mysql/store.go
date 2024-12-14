@@ -11,10 +11,10 @@ import (
 	"sync"
 
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/prometheus/common/log"
-	"gitlab.com/jhblack-olya/trade-engine/conf"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/conf"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 var gdb *gorm.DB

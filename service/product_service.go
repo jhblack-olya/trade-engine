@@ -6,8 +6,8 @@ To obtain a license write to legal@gax.llc
 package service
 
 import (
-	"gitlab.com/jhblack-olya/trade-engine/models"
-	"gitlab.com/jhblack-olya/trade-engine/models/mysql"
+	"github.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models/mysql"
 )
 
 func GetProductById(id string) (*models.Product, error) {

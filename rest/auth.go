@@ -11,8 +11,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/siddontang/go/log"
-	"gitlab.com/jhblack-olya/trade-engine/conf"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/conf"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 func checkAPIkey() gin.HandlerFunc {

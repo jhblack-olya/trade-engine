@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
-	"gitlab.com/jhblack-olya/trade-engine/models"
-	"gitlab.com/jhblack-olya/trade-engine/models/mysql"
+	"github.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models/mysql"
 )
 
 // PlaceOrder: adds order and bills to tables and pass order to matching engine

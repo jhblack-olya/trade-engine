@@ -6,8 +6,8 @@ package matching
 
 import (
 	"github.com/siddontang/go-log/log"
-	"gitlab.com/jhblack-olya/trade-engine/conf"
-	"gitlab.com/jhblack-olya/trade-engine/service"
+	"github.com/jhblack-olya/trade-engine/conf"
+	"github.com/jhblack-olya/trade-engine/service"
 )
 
 var MatchEngine map[string]*Engine

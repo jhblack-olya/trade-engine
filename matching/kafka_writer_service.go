@@ -13,8 +13,8 @@ import (
 
 	"github.com/pingcap/log"
 	"github.com/segmentio/kafka-go"
-	"gitlab.com/jhblack-olya/trade-engine/conf"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/conf"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 var productId2Writer sync.Map

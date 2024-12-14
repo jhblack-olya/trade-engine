@@ -10,8 +10,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"gitlab.com/jhblack-olya/trade-engine/models"
-	"gitlab.com/jhblack-olya/trade-engine/models/mysql"
+	"github.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models/mysql"
 )
 
 func CreateAccount(ctx *gin.Context) {

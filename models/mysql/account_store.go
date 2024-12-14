@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 func (s *Store) GetAccount(userId int64, currency string) (*models.Account, error) {

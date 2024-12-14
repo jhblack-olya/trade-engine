@@ -8,7 +8,7 @@ import (
 	"github.com/pingcap/log"
 	"github.com/shopspring/decimal"
 	logger "github.com/siddontang/go-log/log"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 type Engine struct {

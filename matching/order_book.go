@@ -14,7 +14,7 @@ import (
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/shopspring/decimal"
 	"github.com/siddontang/go-log/log"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 const (

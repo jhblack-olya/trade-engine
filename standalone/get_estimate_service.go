@@ -11,8 +11,8 @@ import (
 
 	"github.com/pingcap/log"
 	"github.com/shopspring/decimal"
-	"gitlab.com/jhblack-olya/trade-engine/matching"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/matching"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 func GetEstimate(productId string, size decimal.Decimal, art int64, side models.Side) (decimal.Decimal, decimal.Decimal, decimal.Decimal) {

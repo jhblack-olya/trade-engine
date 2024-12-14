@@ -9,10 +9,10 @@ import (
 	"fmt"
 
 	"github.com/pingcap/log"
-	"gitlab.com/jhblack-olya/trade-engine/matching"
-	"gitlab.com/jhblack-olya/trade-engine/models"
-	"gitlab.com/jhblack-olya/trade-engine/models/mysql"
-	"gitlab.com/jhblack-olya/trade-engine/service"
+	"github.com/jhblack-olya/trade-engine/matching"
+	"github.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models/mysql"
+	"github.com/jhblack-olya/trade-engine/service"
 )
 
 type FillMaker struct {

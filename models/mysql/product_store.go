@@ -7,7 +7,7 @@ package mysql
 
 import (
 	"github.com/jinzhu/gorm"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 func (s *Store) GetProductById(id string) (*models.Product, error) {

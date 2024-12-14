@@ -16,8 +16,8 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/go-mysql-org/go-mysql/canal"
-	"gitlab.com/jhblack-olya/trade-engine/conf"
-	"gitlab.com/jhblack-olya/trade-engine/utils"
+	"github.com/jhblack-olya/trade-engine/conf"
+	"github.com/jhblack-olya/trade-engine/utils"
 )
 
 type BinLogStream struct {

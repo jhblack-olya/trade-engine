@@ -13,7 +13,7 @@ import (
 
 	"github.com/segmentio/kafka-go"
 	logger "github.com/siddontang/go-log/log"
-	"gitlab.com/jhblack-olya/trade-engine/models"
+	"github.com/jhblack-olya/trade-engine/models"
 )
 
 type KafkaLogReader struct {
