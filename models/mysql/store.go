@@ -11,8 +11,7 @@ import (
 	"sync"
 
 	"github.com/jinzhu/gorm"
-	//"github.com/jinzhu/gorm/dialects/mysql"
-  "github.com/jinzhu/gorm/blob/5c235b72a414e448d1f441aba24a47fd6eb976f4/dialects/mysql/mysql.go"
+	"github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/prometheus/common/log"
 	"github.com/jhblack-olya/trade-engine/conf"
 	"github.com/jhblack-olya/trade-engine/models"
