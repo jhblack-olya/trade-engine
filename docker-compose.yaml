@@ -38,7 +38,7 @@ services:
 ##########################################
   db:
     container_name: gax-dev-mysql
-    image: mysql:8.0.33
+    image: my-mysql-image
     restart: always
     build:
       context: .
